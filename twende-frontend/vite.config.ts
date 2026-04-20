@@ -6,11 +6,21 @@ import path from "path";
 export default defineConfig({
   plugins: [
     react(),
+
     VitePWA({
       registerType: "autoUpdate",
+
       devOptions: {
-        enabled: true, // allows PWA in dev
+        enabled: true,
       },
+
+      // 🔥 THIS FIXES YOUR OFFLINE + OLD BUILD ISSUE
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+      },
+
       manifest: {
         name: "Twende",
         short_name: "Twende",
@@ -19,6 +29,7 @@ export default defineConfig({
         background_color: "#ffffff",
         display: "standalone",
         start_url: "/",
+
         icons: [
           {
             src: "/pwa-192x192.png",
@@ -40,6 +51,7 @@ export default defineConfig({
       },
     }),
   ],
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
