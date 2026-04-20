@@ -1,0 +1,569 @@
+/* src/features/driver/pages/DriverMapPage/driver-map.css
+   Dark-first design with full light mode support.
+   Font: DM Sans — clean, modern, slightly informal — fits transit UI.
+   Accent: route colour (CSS var) + green #1D9E75 for positive states.
+   ================================================================== */
+
+/* ── Base container ───────────────────────────────────────────────────────── */
+.dmap-container {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: "DM Sans", "Sora", sans-serif;
+}
+
+.dmap-dark  { --dmap-surface: rgba(0,0,0,0.55); --dmap-text: #ffffff; --dmap-sub: rgba(255,255,255,0.55); --dmap-border: rgba(255,255,255,0.15); }
+.dmap-light { --dmap-surface: rgba(255,255,255,0.82); --dmap-text: #0b0f0d; --dmap-sub: rgba(0,0,0,0.45); --dmap-border: rgba(0,0,0,0.12); }
+
+.dmap-leaflet {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* ── Leaflet popup overrides ─────────────────────────────────────────────── */
+.dmap-matatu-popup .leaflet-popup-content-wrapper {
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  border: 1px solid rgba(0,0,0,0.07);
+}
+.dmap-matatu-popup .leaflet-popup-content {
+  margin: 14px;
+}
+.dmap-matatu-popup .leaflet-popup-tip {
+  display: none;
+}
+
+/* ── Header bar ───────────────────────────────────────────────────────────── */
+.dmap-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 20;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  pointer-events: none;
+}
+
+.dmap-dark .dmap-header {
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
+}
+.dmap-light .dmap-header {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.65) 0%, transparent 100%);
+}
+
+.dmap-header > * { pointer-events: auto; }
+
+.dmap-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--dmap-surface);
+  border: 1.5px solid var(--dmap-border);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dmap-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.dmap-back-btn:hover {
+  background: rgba(0,0,0,0.65);
+}
+.dmap-light .dmap-back-btn:hover {
+  background: rgba(255,255,255,0.95);
+}
+
+.dmap-route-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 9999px;
+  background: var(--dmap-surface);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid var(--dmap-border);
+  flex: 1;
+  min-width: 0;
+}
+
+.dmap-route-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dmap-route-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--dmap-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Status / Go Live pill ───────────────────────────────────────────────── */
+.dmap-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: "DM Sans", "Sora", sans-serif;
+}
+.dmap-status-pill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dmap-status-pill.online {
+  background: rgba(29, 158, 117, 0.9);
+  color: white;
+  box-shadow: 0 4px 16px rgba(29,158,117,0.4);
+}
+.dmap-status-pill.offline {
+  background: var(--dmap-surface);
+  color: var(--dmap-text);
+  border: 1.5px solid var(--dmap-border);
+}
+.dmap-status-pill.offline:hover {
+  background: rgba(29,158,117,0.15);
+  border-color: rgba(29,158,117,0.4);
+  color: #1D9E75;
+}
+
+.dmap-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: white;
+  flex-shrink: 0;
+}
+.dmap-status-dot.pulse {
+  animation: dmap-pulse 1.8s ease-in-out infinite;
+}
+@keyframes dmap-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.45); }
+  50%      { box-shadow: 0 0 0 4px rgba(255,255,255,0); }
+}
+
+.dmap-status-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  animation: dmap-spin 0.7s linear infinite;
+}
+@keyframes dmap-spin { to { transform: rotate(360deg); } }
+
+/* ── Speed badge (top-right) ─────────────────────────────────────────────── */
+.dmap-speed-badge {
+  position: absolute;
+  top: 72px;
+  right: 14px;
+  z-index: 20;
+  background: var(--dmap-surface);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid var(--dmap-border);
+  border-radius: 18px;
+  padding: 10px 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 68px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+}
+
+.dmap-speed-value {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--dmap-text);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.dmap-speed-unit {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--dmap-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dmap-direction-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px solid var(--dmap-border);
+}
+
+.dmap-dir-arrow {
+  flex-shrink: 0;
+}
+.dmap-dir-arrow.forward  { color: #1D9E75; }
+.dmap-dir-arrow.backward { color: #f59e0b; }
+
+.dmap-dir-label {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: var(--dmap-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dmap-next-stop {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--dmap-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+}
+
+.dmap-eta-value {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--dmap-text);
+  line-height: 1;
+}
+
+.dmap-eta-label {
+  font-size: 0.54rem;
+  font-weight: 700;
+  color: var(--dmap-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  max-width: 58px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dmap-waiting-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: dmap-pulse 1.4s ease-in-out infinite;
+  margin-bottom: 1px;
+}
+
+/* ── Waiting badge (top-left) ───────────────────────────────────────────── */
+.dmap-waiting-badge {
+  position: absolute;
+  top: 72px;
+  left: 14px;
+  z-index: 20;
+  background: var(--dmap-surface);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid var(--dmap-border);
+  border-radius: 18px;
+  padding: 10px 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 68px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+}
+
+.dmap-waiting-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dmap-waiting-icon { color: #ef4444; }
+
+.dmap-waiting-count {
+  color: #ef4444 !important;
+}
+
+/* ── No position yet card ────────────────────────────────────────────────── */
+.dmap-no-position {
+  position: absolute;
+  bottom: 24px;
+  left: 14px;
+  right: 14px;
+  z-index: 20;
+  background: var(--dmap-surface);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid var(--dmap-border);
+  border-radius: 20px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.dmap-no-pos-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dmap-no-pos-text { flex: 1; min-width: 0; }
+
+.dmap-no-pos-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--dmap-text);
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
+
+.dmap-no-pos-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--dmap-sub);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Recenter button ─────────────────────────────────────────────────────── */
+.dmap-recenter-btn {
+  position: absolute;
+  bottom: 130px;
+  right: 14px;
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--dmap-surface);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid var(--dmap-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dmap-text);
+  cursor: pointer;
+  transition: background 0.15s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.dmap-recenter-btn:hover {
+  background: rgba(29,158,117,0.2);
+  border-color: rgba(29,158,117,0.4);
+  color: #1D9E75;
+}
+
+/* ── Bottom sheet overlay ───────────────────────────────────────────────── */
+.dmap-sheet-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0,0,0,0.45);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: dmap-fade-in 0.2s ease;
+}
+@keyframes dmap-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.dmap-sheet {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  border-radius: 1.75rem 1.75rem 0 0;
+  padding: 0 16px 36px;
+  max-height: 75dvh;
+  overflow-y: auto;
+  animation: dmap-sheet-up 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.25);
+}
+@keyframes dmap-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.dmap-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 9999px;
+  margin: 12px auto 16px;
+}
+
+/* ── Passenger rows in sheet ─────────────────────────────────────────────── */
+.dmap-passenger-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+}
+.dmap-passenger-row:last-child { border-bottom: none; }
+
+.dmap-passenger-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dmap-action-btn {
+  padding: 7px 14px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: "DM Sans", "Sora", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dmap-action-btn:active { transform: scale(0.95); }
+.dmap-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dmap-action-btn.accept {
+  background: #1D9E75;
+  color: white;
+  box-shadow: 0 3px 10px rgba(29,158,117,0.3);
+}
+.dmap-action-btn.accept:hover { background: #15795A; }
+
+.dmap-action-btn.board {
+  background: #3B82F6;
+  color: white;
+  box-shadow: 0 3px 10px rgba(59,130,246,0.3);
+}
+.dmap-action-btn.board:hover { background: #2563EB; }
+
+.dmap-action-btn.accepted-label {
+  background: rgba(29,158,117,0.1);
+  color: #1D9E75;
+  cursor: default;
+}
+
+/* ── Waiting pin on map ──────────────────────────────────────────────────── */
+.dmap-waiting-pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.dmap-waiting-pin-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid white;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: white;
+}
+.dmap-waiting-pin-tail {
+  width: 2px;
+  height: 8px;
+  margin-top: -1px;
+}
+
+/* ── Loading screen ──────────────────────────────────────────────────────── */
+.dmap-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.dmap-loading-dark  { background: #09100d; }
+.dmap-loading-light { background: #f5f4ee; }
+
+.dmap-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(29,158,117,0.2);
+  border-top-color: #1D9E75;
+  border-radius: 50%;
+  animation: dmap-spin 0.75s linear infinite;
+}
+
+.dmap-loading-text {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.dmap-loading-dark  .dmap-loading-text { color: rgba(255,255,255,0.45); }
+.dmap-loading-light .dmap-loading-text { color: rgba(0,0,0,0.4); }
+
+.dmap-error-text {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #f87171;
+  text-align: center;
+  padding: 0 32px;
+}
+.dmap-error-btn {
+  margin-top: 8px;
+  padding: 10px 22px;
+  background: #1D9E75;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: "DM Sans", "Sora", sans-serif;
+}
+
+/* ── Driver Own Marker Icon (Leaflet divIcon) ─────────────────────────────── */
+.dmap-driver-own-marker {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  box-shadow: 0 0 0 4px var(--route-colour, #1D9E75)40, 0 4px 16px rgba(0,0,0,0.4);
+  transition: transform 0.4s ease;
+}
+
+.dmap-driver-own-marker.forward  { transform: rotate(0deg); }
+.dmap-driver-own-marker.backward { transform: rotate(180deg); }
+
+.dmap-driver-own-marker svg {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}

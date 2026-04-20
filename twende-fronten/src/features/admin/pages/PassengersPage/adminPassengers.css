@@ -1,0 +1,983 @@
+/* src/features/admin/pages/PassengersPage/adminPassengers.css
+   Extends the shared admin design tokens (adm-* classes) from adminDashboard.css.
+   Adds page-specific styles under the pass-* namespace.
+   No inline styles except route-dot background (dynamic DB hex colour).
+   ================================================================ */
+
+/* ════════════════════════════════════════
+   HEADER BRAND OVERRIDE (blue accent for passengers page)
+   ════════════════════════════════════════ */
+.pass-brand-icon {
+  background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35) !important;
+}
+
+.pass-brand-users {
+  color: white;
+}
+
+/* Waiting badge (mirrors adm-live-badge but blue) */
+.pass-waiting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+html.dark .pass-waiting-badge {
+  background: rgba(59, 130, 246, 0.14);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+/* ════════════════════════════════════════
+   TABS
+   ════════════════════════════════════════ */
+.pass-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+}
+.pass-tabs::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.pass-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 99px;
+  border: 1.5px solid rgba(0, 0, 0, 0.09);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.42);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.16s;
+  font-family: "DM Sans", "Sora", sans-serif;
+  flex-shrink: 0;
+}
+html.dark .pass-tab {
+  border-color: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.35);
+}
+.pass-tab:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
+}
+html.dark .pass-tab:hover {
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #60a5fa;
+}
+.pass-tab-active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: white !important;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
+}
+
+.pass-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 99px;
+  font-size: 9px;
+  font-weight: 900;
+  color: inherit;
+}
+.pass-tab-active .pass-tab-badge {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ════════════════════════════════════════
+   SHARED EMPTY STATE
+   ════════════════════════════════════════ */
+.pass-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+}
+.pass-empty-icon {
+  color: rgba(0, 0, 0, 0.18);
+}
+html.dark .pass-empty-icon {
+  color: rgba(255, 255, 255, 0.14);
+}
+.pass-empty-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.45);
+  margin: 0;
+}
+html.dark .pass-empty-title {
+  color: rgba(255, 255, 255, 0.38);
+}
+.pass-empty-sub {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.3);
+  margin: 0;
+}
+html.dark .pass-empty-sub {
+  color: rgba(255, 255, 255, 0.24);
+}
+
+/* Shared spinner */
+.pass-spin {
+  animation: pass-spin 0.7s linear infinite;
+  color: rgba(0, 0, 0, 0.3);
+}
+html.dark .pass-spin {
+  color: rgba(255, 255, 255, 0.28);
+}
+@keyframes pass-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ════════════════════════════════════════
+   WAITING PANEL
+   ════════════════════════════════════════ */
+.pass-waiting-panel {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+html.dark .pass-waiting-panel {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+
+.pass-waiting-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+html.dark .pass-waiting-header {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+.pass-waiting-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pass-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3b82f6;
+  animation: adm-pulse 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.pass-waiting-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0b0f0d;
+}
+html.dark .pass-waiting-title {
+  color: #f5f5f0;
+}
+.pass-waiting-count {
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+html.dark .pass-waiting-count {
+  color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.pass-waiting-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  gap: 8px;
+}
+.pass-waiting-list::-webkit-scrollbar {
+  width: 4px;
+}
+.pass-waiting-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 99px;
+}
+html.dark .pass-waiting-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pass-waiting-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.02);
+  transition: background 0.12s;
+}
+html.dark .pass-waiting-row {
+  border-color: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.025);
+}
+.pass-waiting-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+html.dark .pass-waiting-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Avatar with status colour */
+.pass-waiting-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+  flex-shrink: 0;
+  color: white;
+}
+.pass-avatar-waiting {
+  background: #3b82f6;
+}
+.pass-avatar-accepted {
+  background: #f59e0b;
+}
+.pass-avatar-boarded {
+  background: #1d9e75;
+}
+.pass-avatar-cancelled,
+.pass-avatar-expired {
+  background: rgba(0, 0, 0, 0.2);
+}
+html.dark .pass-avatar-cancelled,
+html.dark .pass-avatar-expired {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Waiting row info block */
+.pass-waiting-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pass-waiting-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0b0f0d;
+  margin: 0;
+  line-height: 1.2;
+}
+html.dark .pass-waiting-name {
+  color: #f5f5f0;
+}
+.pass-waiting-route-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pass-route-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: var(--dot-color, #94a3b8);
+}
+.pass-waiting-route {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.4);
+}
+html.dark .pass-waiting-route {
+  color: rgba(255, 255, 255, 0.34);
+}
+.pass-stop-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pass-stop-icon {
+  color: rgba(0, 0, 0, 0.28);
+  flex-shrink: 0;
+}
+html.dark .pass-stop-icon {
+  color: rgba(255, 255, 255, 0.24);
+}
+.pass-stop-name,
+.pass-dest-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.52);
+}
+html.dark .pass-stop-name,
+html.dark .pass-dest-name {
+  color: rgba(255, 255, 255, 0.44);
+}
+.pass-arrow-icon {
+  color: rgba(0, 0, 0, 0.22);
+  flex-shrink: 0;
+}
+html.dark .pass-arrow-icon {
+  color: rgba(255, 255, 255, 0.2);
+}
+.pass-driver-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pass-check-icon {
+  color: #1d9e75;
+  flex-shrink: 0;
+}
+.pass-driver-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: #1d9e75;
+}
+
+/* Right column */
+.pass-waiting-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.pass-status-chip {
+  font-size: 8px;
+  font-weight: 900;
+  padding: 3px 9px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pass-chip-waiting {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+html.dark .pass-chip-waiting {
+  color: #60a5fa;
+}
+.pass-chip-accepted {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.pass-chip-boarded {
+  background: rgba(29, 158, 117, 0.1);
+  color: #1d9e75;
+  border: 1px solid rgba(29, 158, 117, 0.2);
+}
+.pass-chip-cancelled,
+.pass-chip-expired {
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+html.dark .pass-chip-cancelled,
+html.dark .pass-chip-expired {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.26);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.pass-timing {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #2563eb;
+}
+html.dark .pass-timing {
+  color: #60a5fa;
+}
+.pass-ago {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.25);
+}
+html.dark .pass-ago {
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* ════════════════════════════════════════
+   PASSENGER TABLE
+   ════════════════════════════════════════ */
+.pass-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Search bar */
+.pass-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pass-search-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 0 14px;
+  height: 42px;
+  transition: border-color 0.15s;
+}
+html.dark .pass-search-box {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.pass-search-box:focus-within {
+  border-color: #2563eb;
+}
+.pass-search-icon {
+  color: rgba(0, 0, 0, 0.28);
+  flex-shrink: 0;
+}
+html.dark .pass-search-icon {
+  color: rgba(255, 255, 255, 0.24);
+}
+.pass-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b0f0d;
+  font-family: "DM Sans", "Sora", sans-serif;
+}
+html.dark .pass-search-input {
+  color: #f5f5f0;
+}
+.pass-search-input::placeholder {
+  color: rgba(0, 0, 0, 0.3);
+}
+html.dark .pass-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.24);
+}
+.pass-total-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.32);
+  white-space: nowrap;
+}
+html.dark .pass-total-badge {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* Passenger list */
+.pass-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.pass-list::-webkit-scrollbar {
+  width: 4px;
+}
+.pass-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 99px;
+}
+html.dark .pass-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pass-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+html.dark .pass-list-row {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+.pass-list-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+}
+html.dark .pass-list-row:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.pass-list-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.pass-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pass-avatar-initial {
+  font-size: 16px;
+  font-weight: 900;
+  color: white;
+}
+
+.pass-list-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pass-list-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0b0f0d;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.dark .pass-list-name {
+  color: #f5f5f0;
+}
+.pass-list-email {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.38);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.dark .pass-list-email {
+  color: rgba(255, 255, 255, 0.32);
+}
+.pass-list-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.pass-meta-icon {
+  color: rgba(0, 0, 0, 0.25);
+}
+html.dark .pass-meta-icon {
+  color: rgba(255, 255, 255, 0.22);
+}
+.pass-list-city {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.32);
+}
+html.dark .pass-list-city {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* Passenger stats column */
+.pass-list-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pass-list-stat {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.pass-stat-icon-blue {
+  color: #3b82f6;
+}
+.pass-stat-icon-amber {
+  color: #f59e0b;
+}
+.pass-stat-val {
+  font-size: 11px;
+  font-weight: 900;
+  color: #0b0f0d;
+}
+html.dark .pass-stat-val {
+  color: #f5f5f0;
+}
+.pass-stat-lbl {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.3);
+}
+html.dark .pass-stat-lbl {
+  color: rgba(255, 255, 255, 0.26);
+}
+.pass-member-since {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.25);
+  margin: 0;
+}
+html.dark .pass-member-since {
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* ════════════════════════════════════════
+   TRIP ACTIVITY PANEL
+   ════════════════════════════════════════ */
+.pass-trip-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Filter bar */
+.pass-trip-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pass-filter-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pass-filter-chip {
+  padding: 6px 13px;
+  border-radius: 99px;
+  border: 1.5px solid rgba(0, 0, 0, 0.09);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.42);
+  cursor: pointer;
+  transition: all 0.14s;
+  font-family: "DM Sans", "Sora", sans-serif;
+  white-space: nowrap;
+}
+html.dark .pass-filter-chip {
+  border-color: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.35);
+}
+.pass-filter-chip:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+html.dark .pass-filter-chip:hover {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+.pass-chip-active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+}
+
+/* Date picker */
+.pass-date-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0, 0, 0, 0.09);
+  background: white;
+  width: fit-content;
+}
+html.dark .pass-date-wrap {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.09);
+}
+.pass-date-icon {
+  color: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+html.dark .pass-date-icon {
+  color: rgba(255, 255, 255, 0.26);
+}
+.pass-date-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0b0f0d;
+  font-family: "DM Sans", "Sora", sans-serif;
+  cursor: pointer;
+}
+html.dark .pass-date-input {
+  color: #f5f5f0;
+  color-scheme: dark;
+}
+.pass-date-clear {
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+}
+html.dark .pass-date-clear {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* Loading state */
+.pass-trips-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.3);
+}
+html.dark .pass-trips-loading {
+  color: rgba(255, 255, 255, 0.26);
+}
+
+/* Trip rows */
+.pass-trips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.pass-trips-list::-webkit-scrollbar {
+  width: 4px;
+}
+.pass-trips-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 99px;
+}
+html.dark .pass-trips-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pass-trip-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: background 0.12s;
+}
+html.dark .pass-trip-row {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+.pass-trip-row:hover {
+  background: rgba(0, 0, 0, 0.01);
+}
+html.dark .pass-trip-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pass-trip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.pass-tdot-completed {
+  background: #1d9e75;
+}
+.pass-tdot-ongoing {
+  background: #f59e0b;
+  animation: adm-pulse 1.4s ease-in-out infinite;
+}
+.pass-tdot-cancelled {
+  background: rgba(0, 0, 0, 0.2);
+}
+html.dark .pass-tdot-cancelled {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pass-trip-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pass-trip-parties {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pass-trip-passenger {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0b0f0d;
+}
+html.dark .pass-trip-passenger {
+  color: #f5f5f0;
+}
+.pass-trip-arrow {
+  color: rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+html.dark .pass-trip-arrow {
+  color: rgba(255, 255, 255, 0.22);
+}
+.pass-trip-driver {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.5);
+}
+html.dark .pass-trip-driver {
+  color: rgba(255, 255, 255, 0.44);
+}
+.pass-trip-route {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.36);
+  margin: 0;
+}
+html.dark .pass-trip-route {
+  color: rgba(255, 255, 255, 0.3);
+}
+.pass-trip-stops {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pass-from-stop {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.52);
+}
+html.dark .pass-from-stop {
+  color: rgba(255, 255, 255, 0.44);
+}
+.pass-trip-arrow-sm {
+  color: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+html.dark .pass-trip-arrow-sm {
+  color: rgba(255, 255, 255, 0.18);
+}
+.pass-to-stop {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.52);
+}
+html.dark .pass-to-stop {
+  color: rgba(255, 255, 255, 0.44);
+}
+
+.pass-trip-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pass-trip-fare {
+  font-size: 12px;
+  font-weight: 900;
+  color: #1d9e75;
+}
+.pass-pay-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.pass-pay-paid {
+  background: rgba(29, 158, 117, 0.1);
+  color: #1d9e75;
+  border: 1px solid rgba(29, 158, 117, 0.2);
+}
+.pass-pay-cash_pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.pass-pay-unpaid {
+  background: rgba(239, 68, 68, 0.09);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+}
+.pass-pay-waived {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+html.dark .pass-pay-waived {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.26);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.pass-trip-time {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.25);
+}
+html.dark .pass-trip-time {
+  color: rgba(255, 255, 255, 0.22);
+}

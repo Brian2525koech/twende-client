@@ -1,0 +1,706 @@
+/* src/features/admin/pages/TripsPage/adminTrips.css
+   Extends the shared admin design language (amber/yellow accent, dark/light).
+   Only trips-specific rules live here — base tokens come from adminDashboard.css.
+   No inline CSS except: trp-route-dot background (dynamic DB hex colour,
+   same permitted exception as sim-route-dot in adminDashboard.css).
+   ================================================================ */
+
+/* ════════════════════════════════════════
+   STAT GRID
+   ════════════════════════════════════════ */
+.trp-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (min-width: 480px) {
+  .trp-stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.trp-stat-card {
+  border-radius: 20px;
+  padding: 14px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trp-stat-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.trp-stat-value {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #0b0f0d;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0;
+}
+html.dark .trp-stat-value {
+  color: #f5f5f0;
+}
+.trp-stat-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: rgba(0, 0, 0, 0.35);
+  margin: 0;
+}
+html.dark .trp-stat-label {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* Colour variants */
+.trp-stat-blue {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+.trp-stat-blue .trp-stat-icon-wrap {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+html.dark .trp-stat-blue {
+  background: rgba(59, 130, 246, 0.1);
+}
+.trp-stat-green {
+  background: rgba(29, 158, 117, 0.08);
+  border: 1px solid rgba(29, 158, 117, 0.15);
+}
+.trp-stat-green .trp-stat-icon-wrap {
+  background: rgba(29, 158, 117, 0.12);
+  color: #1d9e75;
+}
+html.dark .trp-stat-green {
+  background: rgba(29, 158, 117, 0.1);
+}
+.trp-stat-yellow {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+}
+.trp-stat-yellow .trp-stat-icon-wrap {
+  background: rgba(234, 179, 8, 0.15);
+  color: #ca8a04;
+}
+html.dark .trp-stat-yellow {
+  background: rgba(234, 179, 8, 0.12);
+}
+.trp-stat-amber {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+.trp-stat-amber .trp-stat-icon-wrap {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+html.dark .trp-stat-amber {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+/* ════════════════════════════════════════
+   FILTERS
+   ════════════════════════════════════════ */
+.trp-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Status tabs */
+.trp-status-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+}
+.trp-status-tabs::-webkit-scrollbar {
+  display: none;
+}
+.trp-status-tab {
+  padding: 6px 16px;
+  border-radius: 99px;
+  border: 1.5px solid rgba(0, 0, 0, 0.09);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.42);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  font-family: "DM Sans", "Sora", sans-serif;
+}
+html.dark .trp-status-tab {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.35);
+}
+.trp-status-tab:hover {
+  border-color: rgba(202, 138, 4, 0.4);
+  color: rgba(0, 0, 0, 0.7);
+}
+html.dark .trp-status-tab:hover {
+  color: rgba(255, 255, 255, 0.65);
+}
+.trp-tab-active {
+  background: #ca8a04 !important;
+  border-color: #ca8a04 !important;
+  color: white !important;
+  box-shadow: 0 3px 10px rgba(202, 138, 4, 0.28);
+}
+
+/* Filter row */
+.trp-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+/* Custom select wrapper */
+.trp-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.trp-select {
+  padding: 6px 28px 6px 11px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(0, 0, 0, 0.09);
+  background: white;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.55);
+  font-family: "DM Sans", "Sora", sans-serif;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s;
+}
+html.dark .trp-select {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.45);
+}
+.trp-select:focus {
+  border-color: #ca8a04;
+  box-shadow: 0 0 0 3px rgba(202, 138, 4, 0.12);
+}
+.trp-select-active {
+  border-color: #ca8a04 !important;
+  color: #ca8a04 !important;
+  background: rgba(202, 138, 4, 0.06) !important;
+}
+.trp-select-chevron {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: rgba(0, 0, 0, 0.3);
+}
+html.dark .trp-select-chevron {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* Date toggle */
+.trp-date-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(0, 0, 0, 0.09);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.42);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: "DM Sans", "Sora", sans-serif;
+  flex-shrink: 0;
+}
+html.dark .trp-date-toggle {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.35);
+}
+.trp-date-toggle:hover {
+  border-color: rgba(202, 138, 4, 0.4);
+  color: rgba(0, 0, 0, 0.7);
+}
+html.dark .trp-date-toggle:hover {
+  color: rgba(255, 255, 255, 0.65);
+}
+.trp-date-toggle-active {
+  background: rgba(202, 138, 4, 0.08) !important;
+  border-color: #ca8a04 !important;
+  color: #ca8a04 !important;
+}
+
+/* Clear button */
+.trp-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+  font-size: 10px;
+  font-weight: 800;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: "DM Sans", "Sora", sans-serif;
+  flex-shrink: 0;
+}
+.trp-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* Total badge */
+.trp-total-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+html.dark .trp-total-badge {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* Date range panel */
+.trp-date-range {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  flex-wrap: wrap;
+}
+html.dark .trp-date-range {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.trp-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 130px;
+}
+.trp-date-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+html.dark .trp-date-label {
+  color: rgba(255, 255, 255, 0.28);
+}
+.trp-date-input {
+  padding: 8px 11px;
+  border-radius: 11px;
+  border: 1.5px solid rgba(0, 0, 0, 0.09);
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0b0f0d;
+  font-family: "DM Sans", "Sora", sans-serif;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+html.dark .trp-date-input {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f5f5f0;
+}
+.trp-date-input:focus {
+  border-color: #ca8a04;
+  box-shadow: 0 0 0 3px rgba(202, 138, 4, 0.12);
+}
+.trp-date-sep {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.25);
+  padding-bottom: 10px;
+  flex-shrink: 0;
+}
+html.dark .trp-date-sep {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* ════════════════════════════════════════
+   TRIP LIST
+   ════════════════════════════════════════ */
+.trp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Empty state */
+.trp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 52px 24px;
+  text-align: center;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 22px;
+}
+html.dark .trp-empty {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.trp-empty-icon {
+  color: rgba(0, 0, 0, 0.16);
+}
+html.dark .trp-empty-icon {
+  color: rgba(255, 255, 255, 0.12);
+}
+.trp-empty-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.42);
+  margin: 0;
+}
+html.dark .trp-empty-title {
+  color: rgba(255, 255, 255, 0.36);
+}
+.trp-empty-sub {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.28);
+  margin: 0;
+}
+html.dark .trp-empty-sub {
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* Group */
+.trp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.trp-group-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin: 0;
+  padding-left: 2px;
+}
+html.dark .trp-group-label {
+  color: rgba(255, 255, 255, 0.24);
+}
+.trp-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Trip row card */
+.trp-row {
+  position: relative;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 18px;
+  padding: 13px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+html.dark .trp-row {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+.trp-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+html.dark .trp-row:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+.trp-row-live {
+  border-color: rgba(29, 158, 117, 0.3) !important;
+}
+
+/* Live running strip */
+.trp-row-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1d9e75, #23c494);
+  animation: sim-strip-anim 2s linear infinite;
+  background-size: 200% 100%;
+}
+
+/* Top row: names + fare */
+.trp-row-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.trp-names {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+.trp-name-passenger,
+.trp-name-driver {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0b0f0d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+html.dark .trp-name-passenger,
+html.dark .trp-name-driver {
+  color: #f5f5f0;
+}
+.trp-name-icon {
+  color: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+html.dark .trp-name-icon {
+  color: rgba(255, 255, 255, 0.25);
+}
+.trp-name-driver {
+  color: rgba(0, 0, 0, 0.55);
+}
+html.dark .trp-name-driver {
+  color: rgba(255, 255, 255, 0.45);
+}
+.trp-arrow {
+  color: rgba(0, 0, 0, 0.22);
+  flex-shrink: 0;
+}
+html.dark .trp-arrow {
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.trp-row-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.trp-fare {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1d9e75;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.trp-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.trp-pill-completed {
+  background: rgba(29, 158, 117, 0.1);
+  color: #1d9e75;
+  border: 1px solid rgba(29, 158, 117, 0.2);
+}
+.trp-pill-ongoing {
+  background: rgba(234, 179, 8, 0.1);
+  color: #ca8a04;
+  border: 1px solid rgba(234, 179, 8, 0.22);
+}
+.trp-pill-cancelled {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.38);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+html.dark .trp-pill-cancelled {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.trp-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ca8a04;
+  animation: adm-pulse 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Middle row: route + stops */
+.trp-row-mid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+/* route-dot background is a dynamic DB hex — inline style is the only approach,
+   same documented convention as sim-route-dot (adminDashboard.css) */
+.trp-route-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.trp-route-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  padding: 2px 8px 2px 5px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+html.dark .trp-route-tag {
+  color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.trp-stops {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.42);
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+html.dark .trp-stops {
+  color: rgba(255, 255, 255, 0.36);
+}
+.trp-stop-icon {
+  color: rgba(0, 0, 0, 0.28);
+  flex-shrink: 0;
+}
+html.dark .trp-stop-icon {
+  color: rgba(255, 255, 255, 0.22);
+}
+.trp-stop-arrow {
+  color: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+html.dark .trp-stop-arrow {
+  color: rgba(255, 255, 255, 0.16);
+}
+
+/* Bottom row: time + payment */
+.trp-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.trp-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.32);
+}
+html.dark .trp-time {
+  color: rgba(255, 255, 255, 0.26);
+}
+.trp-duration {
+  color: rgba(0, 0, 0, 0.22);
+  font-size: 9px;
+}
+html.dark .trp-duration {
+  color: rgba(255, 255, 255, 0.18);
+}
+.trp-payment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.trp-pay-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.trp-pay-paid {
+  background: rgba(29, 158, 117, 0.1);
+  color: #1d9e75;
+  border: 1px solid rgba(29, 158, 117, 0.2);
+}
+.trp-pay-cash {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.trp-pay-unpaid {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+.trp-pay-waived {
+  background: rgba(139, 92, 246, 0.08);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+.trp-method {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+html.dark .trp-method {
+  color: rgba(255, 255, 255, 0.24);
+}
+
+/* Keyframes re-used from adminDashboard.css (same bundle):
+   adm-pulse, sim-strip-anim */

@@ -1,0 +1,207 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── ROOT DEFAULTS ─── */
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* ─── DARK MODE ROOT FIX ───────────────────────────────────────────────────
+   Tailwind's dark: variants work on ELEMENTS inside <html class="dark">.
+   But the <html> and <body> elements themselves need explicit rules here
+   because they sit outside any React component's className control.
+   This is why your background wasn't changing — the page background
+   is painted by the browser on <html>/<body>, not by your React div.
+   ─────────────────────────────────────────────────────────────────────── */
+html {
+  background-color: #F5F5F0;
+  color: #0A0F0D;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark {
+  background-color: #0A0F0D;
+  color: #F5F5F0;
+}
+
+/* ─── TWENDE LANDING PAGE ─────────────────────────────────────────────────
+   All classes prefixed with .twende- so they never leak to other pages.
+   ─────────────────────────────────────────────────────────────────────── */
+
+/* Heading font */
+.twende-font {
+  font-family: 'DM Sans', 'Sora', sans-serif;
+}
+
+/* Noise texture overlay */
+.twende-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px;
+}
+
+/* Feature card glow colours */
+.twende-glow-green { background-color: #1D9E75; }
+.twende-glow-amber { background-color: #F59E0B; }
+.twende-glow-blue  { background-color: #3B82F6; }
+
+/* Feature icon background fills */
+.twende-icon-bg-green { background-color: rgba(29, 158, 117, 0.094); }
+.twende-icon-bg-amber { background-color: rgba(245, 158, 11,  0.094); }
+.twende-icon-bg-blue  { background-color: rgba(59, 130, 246,  0.094); }
+
+/* Feature icon colours */
+.twende-icon-green { color: #1D9E75; }
+.twende-icon-amber { color: #F59E0B; }
+.twende-icon-blue  { color: #3B82F6; }
+
+/* CTA banner */
+.twende-cta-gradient {
+  background: linear-gradient(135deg, #1D9E75 0%, #0d7a5a 100%);
+}
+.twende-cta-pattern {
+  background-image:
+    radial-gradient(circle at 20% 80%, white 1px, transparent 1px),
+    radial-gradient(circle at 80% 20%, white 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Hero headline underline */
+.twende-underline-path {
+  fill: none;
+  stroke: #1D9E75;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+/* ================================================
+   TWENDE AUTH PAGES (Login + Register)
+   Paste these at the bottom of your index.css
+   ================================================ */
+
+/* ── Left decorative panel background ── */
+.twende-auth-panel {
+  background-color: #0d1a14;
+}
+
+/* ── Subtle grid pattern on left panel ── */
+.twende-auth-grid {
+  background-image:
+    linear-gradient(rgba(29, 158, 117, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 158, 117, 0.07) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Input field wrapper ── */
+.twende-auth-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.04);
+  border: 1.5px solid rgba(0, 0, 0, 0.10);
+  border-radius: 1rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+/* dark mode field */
+html.dark .twende-auth-field {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+/* focused state */
+.twende-auth-field-focused {
+  border-color: #1D9E75 !important;
+  background-color: rgba(29, 158, 117, 0.04) !important;
+}
+
+/* ── Icon inside field ── */
+.twende-auth-icon {
+  position: absolute;
+  left: 1rem;
+  color: rgba(0, 0, 0, 0.30);
+  pointer-events: none;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+html.dark .twende-auth-icon {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.twende-auth-icon-active {
+  color: #1D9E75 !important;
+}
+
+/* ── The actual input / select inside the field ── */
+.twende-auth-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 1rem 1rem 1rem 2.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #0A0F0D;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+}
+
+html.dark .twende-auth-input {
+  color: #F5F5F0;
+}
+
+.twende-auth-input::placeholder {
+  color: rgba(0, 0, 0, 0.30);
+}
+
+html.dark .twende-auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+/* select option colours in dark mode */
+html.dark .twende-auth-input option {
+  background-color: #1a1a1a;
+  color: #F5F5F0;
+}
+
+/* ── Eye toggle button ── */
+.twende-auth-eye {
+  position: absolute;
+  right: 0.875rem;
+  color: rgba(0, 0, 0, 0.30);
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  transition: color 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+html.dark .twende-auth-eye {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.twende-auth-eye:hover {
+  color: #1D9E75;
+}
+
+/* ── Password strength bar colours ── */
+.twende-strength-weak   { background-color: #ef4444; color: #ef4444; }
+.twende-strength-fair   { background-color: #f97316; color: #f97316; }
+.twende-strength-good   { background-color: #eab308; color: #eab308; }
+.twende-strength-strong { background-color: #1D9E75; color: #1D9E75; }
+
+
+/* Custom Route Coloring System */
+.route-card-context {
+  --rc-color: #1D9E75; /* Default Twende Green */
+}

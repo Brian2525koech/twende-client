@@ -1,0 +1,101 @@
+/* src/features/driver/components/driverBottomNav.css
+   Scoped with drv-nav-* prefix.
+   Mirrors the passenger BottomNav design system.
+   Uses html.dark for theme.
+   ================================================================ */
+
+.drv-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 0 16px 20px;
+  pointer-events: none;
+}
+
+.drv-nav-inner {
+  max-width: 440px;
+  margin: 0 auto;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 28px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 2px 10px rgba(0,0,0,0.06);
+  pointer-events: auto;
+}
+html.dark .drv-nav-inner {
+  background: #111816;
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.25);
+}
+
+.drv-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.18s;
+  min-width: 60px;
+}
+.drv-nav-tab-active {
+  background: rgba(29,158,117,0.10);
+}
+html.dark .drv-nav-tab-active { background: rgba(29,158,117,0.14); }
+
+.drv-nav-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.drv-nav-icon {
+  color: rgba(0,0,0,0.30);
+  transition: transform 0.18s, color 0.18s;
+}
+html.dark .drv-nav-icon { color: rgba(255,255,255,0.28); }
+.drv-nav-icon-active {
+  color: #1D9E75 !important;
+  transform: scale(1.10);
+}
+
+/* Notification badge */
+.drv-nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ef4444;
+  color: white;
+  border-radius: 99px;
+  font-size: 9px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  line-height: 1;
+}
+html.dark .drv-nav-badge { border-color: #111816; }
+
+.drv-nav-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(0,0,0,0.30);
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  transition: color 0.18s;
+}
+html.dark .drv-nav-label { color: rgba(255,255,255,0.26); }
+.drv-nav-label-active { color: #1D9E75 !important; }

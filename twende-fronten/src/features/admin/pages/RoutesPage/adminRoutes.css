@@ -1,0 +1,1164 @@
+/* src/features/admin/pages/RoutesPage/adminRoutes.css
+   Routes page styles — same amber/yellow admin accent as DashboardPage.
+   No inline CSS. Dark/light via html.dark.
+   Dynamic route colour is injected as --rte-route-colour CSS custom property
+   on .rte-card (set once per card). Colour swatches use --rte-swatch-colour.
+   Colour preview uses --rte-preview-colour.
+   ================================================================ */
+
+/* ── Page ── */
+.rte-page {
+  min-height: 100dvh;
+  background: #f5f4ee;
+  font-family: "DM Sans", "Sora", sans-serif;
+  transition: background 0.3s;
+}
+html.dark .rte-page {
+  background: #09100d;
+}
+
+/* ════════════════════════════════════════
+   LOADING
+   ════════════════════════════════════════ */
+.rte-loading {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.rte-loading-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: rgba(234, 179, 8, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+html.dark .rte-loading-icon {
+  background: rgba(234, 179, 8, 0.14);
+}
+.rte-loading-spinner-icon {
+  color: #ca8a04;
+  animation: rte-pulse 1.2s ease-in-out infinite;
+}
+@keyframes rte-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.92);
+  }
+}
+.rte-loading-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.35);
+}
+html.dark .rte-loading-text {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* ════════════════════════════════════════
+   HEADER
+   ════════════════════════════════════════ */
+.rte-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+html.dark .rte-header {
+  background: #0f1a15;
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+.rte-header-inner {
+  max-width: 660px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+/* Brand */
+.rte-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.rte-brand-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ca8a04, #eab308);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.35);
+  flex-shrink: 0;
+}
+.rte-brand-icon-svg {
+  color: white;
+}
+.rte-brand-name {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #0b0f0d;
+  letter-spacing: -0.03em;
+  margin: 0;
+  line-height: 1.1;
+}
+html.dark .rte-brand-name {
+  color: #f5f5f0;
+}
+.rte-brand-dot {
+  color: #ca8a04;
+}
+.rte-brand-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #ca8a04;
+  letter-spacing: 0.15em;
+  margin-left: 4px;
+  vertical-align: middle;
+  background: rgba(234, 179, 8, 0.12);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+.rte-brand-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+html.dark .rte-brand-sub {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* Header controls */
+.rte-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rte-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #ca8a04;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: "DM Sans", "Sora", sans-serif;
+  box-shadow: 0 3px 10px rgba(202, 138, 4, 0.3);
+  transition: all 0.15s;
+}
+.rte-add-btn:hover {
+  background: #b87a04;
+  transform: translateY(-1px);
+}
+
+/* Shared icon button — mirrors adm-icon-btn in dashboard */
+.adm-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.4);
+  transition: background 0.15s;
+}
+html.dark .adm-icon-btn {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.4);
+}
+.adm-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.09);
+}
+html.dark .adm-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.adm-sun {
+  color: #f59e0b;
+}
+.adm-moon {
+  color: rgba(0, 0, 0, 0.45);
+}
+html.dark .adm-moon {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Filter bar */
+.rte-filter-bar {
+  max-width: 660px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 12px;
+}
+.rte-search-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.rte-search-icon {
+  position: absolute;
+  left: 11px;
+  color: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+html.dark .rte-search-icon {
+  color: rgba(255, 255, 255, 0.28);
+}
+.rte-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 12px;
+  font-weight: 600;
+  color: #0b0f0d;
+  font-family: "DM Sans", "Sora", sans-serif;
+  outline: none;
+  transition: border-color 0.15s;
+}
+html.dark .rte-search-input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f5f5f0;
+}
+.rte-search-input::placeholder {
+  color: rgba(0, 0, 0, 0.3);
+}
+html.dark .rte-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+.rte-search-input:focus {
+  border-color: #ca8a04;
+}
+
+.rte-city-filter-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.rte-filter-icon {
+  position: absolute;
+  left: 10px;
+  color: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+html.dark .rte-filter-icon {
+  color: rgba(255, 255, 255, 0.28);
+}
+.rte-city-select {
+  appearance: none;
+  padding: 8px 14px 8px 28px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 11px;
+  font-weight: 700;
+  color: #0b0f0d;
+  font-family: "DM Sans", "Sora", sans-serif;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+html.dark .rte-city-select {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f5f5f0;
+}
+.rte-city-select:focus {
+  border-color: #ca8a04;
+}
+
+/* ════════════════════════════════════════
+   MAIN
+   ════════════════════════════════════════ */
+.rte-main {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 20px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.rte-bottom-spacer {
+  height: 110px;
+}
+
+.rte-route-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ════════════════════════════════════════
+   EMPTY STATE
+   ════════════════════════════════════════ */
+.rte-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 24px;
+  text-align: center;
+}
+.rte-empty-icon {
+  color: rgba(0, 0, 0, 0.18);
+}
+html.dark .rte-empty-icon {
+  color: rgba(255, 255, 255, 0.14);
+}
+.rte-empty-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.45);
+  margin: 0;
+}
+html.dark .rte-empty-title {
+  color: rgba(255, 255, 255, 0.38);
+}
+.rte-empty-sub {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.3);
+  margin: 0;
+}
+html.dark .rte-empty-sub {
+  color: rgba(255, 255, 255, 0.24);
+}
+.rte-empty-cta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 20px;
+  border-radius: 14px;
+  background: #ca8a04;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: "DM Sans", "Sora", sans-serif;
+  box-shadow: 0 3px 12px rgba(202, 138, 4, 0.3);
+  transition: all 0.15s;
+}
+.rte-empty-cta:hover {
+  background: #b87a04;
+  transform: translateY(-1px);
+}
+
+/* ════════════════════════════════════════
+   ROUTE CARD
+   --rte-route-colour is set via style prop on .rte-card
+   and consumed here for strip, dot, stop index, and stop line.
+   ════════════════════════════════════════ */
+.rte-card {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+html.dark .rte-card {
+  background: #111816;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+.rte-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+html.dark .rte-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+.rte-card-expanded {
+  border-color: rgba(234, 179, 8, 0.25) !important;
+}
+html.dark .rte-card-expanded {
+  border-color: rgba(234, 179, 8, 0.2) !important;
+}
+
+/* Accent strip — reads dynamic colour from CSS custom property */
+.rte-card-strip {
+  height: 3px;
+  width: 100%;
+  background: var(--rte-route-colour, #ca8a04);
+}
+
+/* Card header row */
+.rte-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 12px;
+  cursor: pointer;
+}
+
+.rte-card-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Route colour dot — reads from CSS custom property */
+.rte-route-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+  background: var(--rte-route-colour, #ca8a04);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+html.dark .rte-route-dot {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+.rte-card-info {
+  flex: 1;
+  min-width: 0;
+}
+.rte-card-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0b0f0d;
+  margin: 0 0 4px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.dark .rte-card-name {
+  color: #f5f5f0;
+}
+.rte-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.38);
+  flex-wrap: wrap;
+}
+html.dark .rte-card-meta {
+  color: rgba(255, 255, 255, 0.32);
+}
+.rte-meta-city {
+  color: #ca8a04;
+  font-weight: 800;
+}
+.rte-meta-sep {
+  color: rgba(0, 0, 0, 0.2);
+}
+html.dark .rte-meta-sep {
+  color: rgba(255, 255, 255, 0.18);
+}
+.rte-meta-icon {
+  color: rgba(0, 0, 0, 0.28);
+}
+html.dark .rte-meta-icon {
+  color: rgba(255, 255, 255, 0.24);
+}
+.rte-card-desc {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.38);
+  font-weight: 500;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+html.dark .rte-card-desc {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Card right controls */
+.rte-card-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.rte-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.14s;
+  font-family: "DM Sans", "Sora", sans-serif;
+}
+.rte-btn-edit {
+  background: rgba(234, 179, 8, 0.1);
+  color: #ca8a04;
+  border: 1.5px solid rgba(234, 179, 8, 0.2);
+}
+.rte-btn-edit:hover {
+  background: rgba(234, 179, 8, 0.18);
+}
+.rte-btn-del {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border: 1.5px solid rgba(239, 68, 68, 0.15);
+}
+.rte-btn-del:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+.rte-btn-confirm-del {
+  background: #ef4444;
+  color: white;
+  border: 1.5px solid #ef4444;
+}
+.rte-chevron {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: background 0.14s;
+}
+html.dark .rte-chevron {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.3);
+}
+.rte-chevron:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+html.dark .rte-chevron:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ════════════════════════════════════════
+   STOP EDITOR (expanded section)
+   ════════════════════════════════════════ */
+.rte-stop-editor {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.015);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+html.dark .rte-stop-editor {
+  border-top-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rte-stop-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rte-stop-editor-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin: 0;
+}
+html.dark .rte-stop-editor-label {
+  color: rgba(255, 255, 255, 0.25);
+}
+.rte-stop-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rte-geo-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(59, 130, 246, 0.22);
+  background: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: "DM Sans", "Sora", sans-serif;
+  transition: background 0.14s;
+}
+html.dark .rte-geo-btn {
+  background: rgba(59, 130, 246, 0.1);
+}
+.rte-geo-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.16);
+}
+.rte-geo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rte-add-stop-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: none;
+  background: #1d9e75;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: "DM Sans", "Sora", sans-serif;
+  box-shadow: 0 2px 8px rgba(29, 158, 117, 0.25);
+  transition: all 0.14s;
+}
+.rte-add-stop-btn:hover {
+  background: #178562;
+}
+
+/* Loading / Empty stops */
+.rte-stops-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.35);
+}
+html.dark .rte-stops-loading {
+  color: rgba(255, 255, 255, 0.28);
+}
+.rte-stops-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 12px;
+  text-align: center;
+}
+.rte-stops-empty-icon {
+  color: rgba(0, 0, 0, 0.18);
+}
+html.dark .rte-stops-empty-icon {
+  color: rgba(255, 255, 255, 0.14);
+}
+.rte-stops-empty p {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.3);
+  margin: 0;
+}
+html.dark .rte-stops-empty p {
+  color: rgba(255, 255, 255, 0.24);
+}
+
+/* Stop list */
+.rte-stop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rte-stop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  position: relative;
+  transition: background 0.12s;
+}
+html.dark .rte-stop-row {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+.rte-stop-row:hover {
+  background: rgba(0, 0, 0, 0.015);
+}
+html.dark .rte-stop-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Stop index badge — background from CSS custom property */
+.rte-stop-index {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background: var(--rte-route-colour, #ca8a04);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+/* Connector line — border-color from CSS custom property */
+.rte-stop-line {
+  position: absolute;
+  left: 20px;
+  bottom: -7px;
+  width: 2px;
+  height: 7px;
+  border-left: 2px dashed var(--rte-route-colour, #ca8a04);
+  opacity: 0.3;
+  z-index: 1;
+}
+
+.rte-stop-info {
+  flex: 1;
+  min-width: 0;
+}
+.rte-stop-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0b0f0d;
+  margin: 0 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html.dark .rte-stop-name {
+  color: #f5f5f0;
+}
+.rte-stop-coords {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.3);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+html.dark .rte-stop-coords {
+  color: rgba(255, 255, 255, 0.24);
+}
+
+/* Stop action buttons */
+.rte-stop-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.rte-stop-icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.35);
+  transition: all 0.13s;
+  font-family: "DM Sans", "Sora", sans-serif;
+}
+html.dark .rte-stop-icon-btn {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.3);
+}
+.rte-stop-icon-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.rte-stop-icon-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.09);
+  color: rgba(0, 0, 0, 0.6);
+}
+html.dark .rte-stop-icon-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.11);
+  color: rgba(255, 255, 255, 0.55);
+}
+.rte-stop-edit {
+  background: rgba(234, 179, 8, 0.1) !important;
+  color: #ca8a04 !important;
+}
+.rte-stop-edit:hover:not(:disabled) {
+  background: rgba(234, 179, 8, 0.18) !important;
+}
+.rte-stop-del {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: #ef4444 !important;
+}
+.rte-stop-del:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.16) !important;
+}
+.rte-stop-del-confirm {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+/* Spinner */
+.rte-spin {
+  animation: rte-spin 0.8s linear infinite;
+}
+@keyframes rte-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ════════════════════════════════════════
+   MODALS
+   ════════════════════════════════════════ */
+.rte-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 env(safe-area-inset-bottom);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: rte-overlay-in 0.18s ease;
+}
+@keyframes rte-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+html.dark .rte-modal-overlay {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.rte-modal {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 28px 28px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: rte-modal-slide 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 90dvh;
+}
+html.dark .rte-modal {
+  background: #111816;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+@keyframes rte-modal-slide {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.rte-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+html.dark .rte-modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+.rte-modal-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0b0f0d;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+html.dark .rte-modal-title {
+  color: #f5f5f0;
+}
+.rte-modal-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.38);
+  margin: 2px 0 0;
+}
+html.dark .rte-modal-subtitle {
+  color: rgba(255, 255, 255, 0.3);
+}
+.rte-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.13s;
+}
+html.dark .rte-modal-close {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
+}
+.rte-modal-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+html.dark .rte-modal-close:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.rte-modal-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+/* Form fields */
+.rte-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rte-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.rte-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.42);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+html.dark .rte-label {
+  color: rgba(255, 255, 255, 0.35);
+}
+.rte-input {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b0f0d;
+  font-family: "DM Sans", "Sora", sans-serif;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+html.dark .rte-input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f5f5f0;
+}
+.rte-input::placeholder {
+  color: rgba(0, 0, 0, 0.28);
+}
+html.dark .rte-input::placeholder {
+  color: rgba(255, 255, 255, 0.22);
+}
+.rte-input:focus {
+  border-color: #ca8a04;
+}
+.rte-select {
+  appearance: none;
+  cursor: pointer;
+}
+.rte-textarea {
+  resize: none;
+  line-height: 1.5;
+}
+
+/* Colour picker
+   .rte-colour-row has --rte-preview-colour set via style prop
+   .rte-colour-preview reads it. No other inline styles needed. */
+.rte-colour-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rte-colour-preview {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: var(--rte-preview-colour, #1d9e75);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  transition: background 0.15s;
+}
+html.dark .rte-colour-preview {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.rte-colour-text {
+  flex: 1;
+  font-size: 12px;
+  font-family: "DM Mono", "Courier New", monospace;
+  letter-spacing: 0.08em;
+}
+.rte-colour-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* Each swatch reads --rte-swatch-colour set via style prop */
+.rte-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--rte-swatch-colour, #ca8a04);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.13s;
+  outline: none;
+}
+.rte-swatch:hover {
+  transform: scale(1.12);
+}
+.rte-swatch-active {
+  border-color: white !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+  transform: scale(1.1);
+}
+html.dark .rte-swatch-active {
+  border-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Coord hint */
+.rte-coord-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.3);
+  margin-top: -4px;
+}
+html.dark .rte-coord-hint {
+  color: rgba(255, 255, 255, 0.24);
+}
+
+/* Modal footer */
+.rte-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+html.dark .rte-modal-footer {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+.rte-btn-cancel {
+  flex: 1;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: transparent;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: "DM Sans", "Sora", sans-serif;
+  transition: background 0.14s;
+}
+html.dark .rte-btn-cancel {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.45);
+}
+.rte-btn-cancel:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.04);
+}
+html.dark .rte-btn-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+.rte-btn-cancel:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.rte-btn-confirm {
+  flex: 2;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  background: #ca8a04;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: "DM Sans", "Sora", sans-serif;
+  box-shadow: 0 3px 12px rgba(202, 138, 4, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.rte-btn-confirm:hover:not(:disabled) {
+  background: #b87a04;
+  transform: translateY(-1px);
+}
+.rte-btn-confirm:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner inside confirm button */
+.rte-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: white;
+  animation: rte-spin 0.7s linear infinite;
+  display: inline-block;
+}

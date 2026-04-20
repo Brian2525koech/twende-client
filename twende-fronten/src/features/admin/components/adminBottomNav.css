@@ -1,0 +1,101 @@
+/* src/features/admin/components/adminBottomNav.css */
+
+.adm-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 50;
+  padding: 0 12px 18px;
+  pointer-events: none;
+}
+
+.adm-nav-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 26px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);
+  pointer-events: auto;
+
+  /* horizontal scroll */
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;     /* IE/Edge */
+}
+.adm-nav-inner::-webkit-scrollbar { display: none; } /* Chrome, Safari, Opera */
+
+html.dark .adm-nav-inner {
+  background: #0F1A15;
+  border-color: rgba(255,255,255,0.07);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.50);
+}
+
+/* fade hints at edges so the user knows it scrolls */
+.adm-nav-inner::before,
+.adm-nav-inner::after {
+  content: '';
+  position: sticky;
+  top: 0; bottom: 0;
+  width: 20px;
+  flex-shrink: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.adm-nav-inner::before {
+  left: 0;
+  background: linear-gradient(to right, white, transparent);
+}
+.adm-nav-inner::after {
+  right: 0;
+  background: linear-gradient(to left, white, transparent);
+}
+html.dark .adm-nav-inner::before {
+  background: linear-gradient(to right, #0F1A15, transparent);
+}
+html.dark .adm-nav-inner::after {
+  background: linear-gradient(to left, #0F1A15, transparent);
+}
+
+.adm-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 14px;
+  border-radius: 18px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.18s;
+  flex-shrink: 0;       /* prevent tabs from shrinking */
+  min-width: 58px;
+}
+.adm-nav-tab-active { background: rgba(234,179,8,0.12); }
+html.dark .adm-nav-tab-active { background: rgba(234,179,8,0.15); }
+
+.adm-nav-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.adm-nav-icon { color: rgba(0,0,0,0.28); transition: color 0.18s, transform 0.18s; }
+html.dark .adm-nav-icon { color: rgba(255,255,255,0.25); }
+.adm-nav-icon-active { color: #ca8a04 !important; transform: scale(1.08); }
+
+.adm-nav-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(0,0,0,0.28);
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  transition: color 0.18s;
+  white-space: nowrap;
+}
+html.dark .adm-nav-label { color: rgba(255,255,255,0.24); }
+.adm-nav-label-active { color: #ca8a04 !important; }

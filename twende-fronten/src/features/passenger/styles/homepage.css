@@ -1,0 +1,160 @@
+/* ─── Route card dynamic color classes ──────────────────────────────────── */
+.dynamic-route-bg {
+  --rc-color-rgb: 29, 158, 117;
+  background-color: var(--rc-color, #1D9E75);
+  box-shadow: 0 8px 24px rgba(var(--rc-color-rgb, 29, 158, 117), 0.3);
+}
+
+.dynamic-route-strip {
+  background: linear-gradient(
+    90deg,
+    var(--rc-color, #1D9E75) 0%,
+    rgba(var(--rc-color-rgb, 29, 158, 117), 0.6) 100%
+  );
+}
+
+.route-card-context:hover .dynamic-route-strip {
+  opacity: 1;
+}
+
+.route-card-context .dynamic-track-btn {
+  background-color: rgba(var(--rc-color-rgb, 29, 158, 117), 0.12);
+  color: var(--rc-color, #1D9E75);
+}
+
+.route-card-context:hover .dynamic-track-btn,
+.route-card-context .dynamic-track-btn:hover {
+  background-color: var(--rc-color, #1D9E75);
+  color: #ffffff;
+}
+
+.route-card-context .dynamic-track-btn:active {
+  transform: scale(0.97);
+}
+
+/* ─── Stat card accent ───────────────────────────────────────────────────── */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(29,158,117,0.04) 0%, transparent 60%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ─── Promo banner shimmer ───────────────────────────────────────────────── */
+.promo-banner {
+  position: relative;
+  overflow: hidden;
+}
+
+.promo-banner::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255,255,255,0.08) 50%,
+    transparent 60%
+  );
+  animation: promo-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes promo-shimmer {
+  0%   { left: -60%; }
+  60%  { left: 120%; }
+  100% { left: 120%; }
+}
+
+/* ─── Search bar focus ring ──────────────────────────────────────────────── */
+.search-wrapper:focus-within .search-icon {
+  color: #1D9E75;
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
+@keyframes skeleton-wave {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 25%,
+    #e2e8f0 50%,
+    #f1f5f9 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+}
+
+/* ─── Bottom nav blur backdrop ───────────────────────────────────────────── */
+.bottom-nav-backdrop {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ─── Route card hover border glow ──────────────────────────────────────── */
+.route-card-context {
+  transition: box-shadow 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+}
+
+.route-card-context:hover {
+  box-shadow:
+    0 4px 24px rgba(var(--rc-color-rgb, 29, 158, 117), 0.12),
+    0 1px 4px rgba(0,0,0,0.04);
+}
+
+/* ─── Live dot ───────────────────────────────────────────────────────────── */
+@keyframes live-ping {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.6); opacity: 0.4; }
+}
+
+.live-dot {
+  animation: live-ping 1.8s ease-in-out infinite;
+}
+
+/* ─── Greeting section ───────────────────────────────────────────────────── */
+.greeting-label {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* ─── Section heading ────────────────────────────────────────────────────── */
+.section-heading {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+/* ─── Stats strip value ──────────────────────────────────────────────────── */
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}

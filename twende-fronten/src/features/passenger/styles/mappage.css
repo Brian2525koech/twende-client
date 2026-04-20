@@ -1,0 +1,660 @@
+/* ================================================
+   TWENDE MAP PAGE — Replace the entire old map
+   section in your index.css with this block.
+   ================================================ */
+
+/* ── Leaflet popup chrome ── */
+.twende-map-popup .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  border-radius: 18px !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.20), 0 4px 16px rgba(0,0,0,0.10) !important;
+  border: none !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+.twende-map-popup .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+.twende-map-popup .leaflet-popup-tip-container { display: none !important; }
+
+/* ════════════════════════════════════════
+   POPUP CARD
+   ════════════════════════════════════════ */
+.twende-popup-card {
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  min-width: 240px;
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.twende-popup-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px 10px;
+}
+.twende-popup-avatar {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: #1D9E75;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.twende-popup-avatar-icon { color: #ffffff; }
+.twende-popup-title-group { min-width: 0; flex: 1; }
+.twende-popup-name {
+  font-weight: 900; font-size: 14px; color: #0A0F0D;
+  margin: 0; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.twende-popup-plate-tag {
+  font-size: 10px; font-weight: 700;
+  color: rgba(10,15,13,0.5); margin: 0;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+
+.twende-popup-badge {
+  font-size: 9px; font-weight: 900;
+  padding: 3px 8px; border-radius: 99px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap; flex-shrink: 0;
+}
+.twende-badge-waiting {
+  color: #f59e0b; background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.3);
+}
+.twende-badge-arriving {
+  color: #1D9E75; background: rgba(29,158,117,0.12);
+  border: 1px solid rgba(29,158,117,0.3);
+  animation: twende-badge-pulse 1s ease-in-out infinite;
+}
+@keyframes twende-badge-pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+/* Stars */
+.twende-popup-stars {
+  display: flex; align-items: center; gap: 3px;
+  padding: 0 16px 8px;
+}
+.twende-star-filled { color: #FBBF24; fill: #FBBF24; }
+.twende-star-empty  { color: #E5E7EB; fill: none; }
+.twende-popup-rating-value {
+  margin-left: 4px; font-size: 12px; font-weight: 900; color: #0A0F0D;
+}
+.twende-popup-rating-count {
+  font-size: 10px; color: rgba(10,15,13,0.45); margin-left: 2px;
+}
+
+/* Speed row */
+.twende-popup-speed-row {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 16px 10px;
+  border-top: 1px solid rgba(10,15,13,0.06);
+}
+.twende-popup-speed-icon { color: #1D9E75; flex-shrink: 0; }
+.twende-popup-speed-value { font-size: 11px; font-weight: 700; color: rgba(10,15,13,0.55); }
+.twende-popup-speed-sep   { color: rgba(10,15,13,0.25); font-size: 10px; }
+
+/* Capacity */
+.twende-popup-capacity-block {
+  margin: 0 16px 12px;
+  padding: 10px 12px;
+  background: rgba(10,15,13,0.04);
+  border-radius: 12px;
+}
+.twende-popup-capacity-row {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+}
+.twende-popup-capacity-label {
+  font-size: 10px; font-weight: 700;
+  color: rgba(10,15,13,0.5); text-transform: uppercase; letter-spacing: 0.08em;
+}
+.twende-popup-capacity-value { font-size: 11px; font-weight: 900; color: #1D9E75; }
+.twende-popup-bar-track {
+  height: 6px; border-radius: 99px;
+  background: rgba(10,15,13,0.08); overflow: hidden;
+}
+.twende-popup-bar-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 0.5s ease;
+}
+.twende-popup-capacity-status {
+  font-size: 10px; color: #1D9E75; font-weight: 700; margin: 5px 0 0;
+}
+
+/* Onboard passengers */
+.twende-popup-onboard {
+  padding: 0 16px 12px;
+  border-top: 1px solid rgba(10,15,13,0.06);
+}
+.twende-popup-onboard-label {
+  font-size: 9px; font-weight: 800; color: rgba(10,15,13,0.38);
+  text-transform: uppercase; letter-spacing: 0.12em;
+  margin: 8px 0 6px;
+}
+.twende-popup-onboard-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
+}
+.twende-popup-onboard-avatar {
+  width: 26px; height: 26px; border-radius: 9px;
+  background: #1D9E75;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900; color: white; flex-shrink: 0;
+}
+.twende-popup-onboard-name {
+  font-size: 12px; font-weight: 800; color: #0A0F0D; margin: 0;
+}
+.twende-popup-onboard-dest {
+  font-size: 10px; color: rgba(10,15,13,0.45); margin: 0;
+}
+
+/* Payment pill */
+.twende-popup-pay-pill {
+  font-size: 9px; font-weight: 900;
+  padding: 2px 8px; border-radius: 99px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.pay-paid {
+  background: rgba(29,158,117,0.10); color: #1D9E75;
+  border: 1px solid rgba(29,158,117,0.2);
+}
+.pay-cash {
+  background: rgba(245,158,11,0.10); color: #d97706;
+  border: 1px solid rgba(245,158,11,0.2);
+}
+
+/* Stop ETAs inside popup */
+.twende-popup-etas {
+  padding: 0 16px 14px;
+  border-top: 1px solid rgba(10,15,13,0.06);
+}
+.twende-popup-eta-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 5px;
+}
+.twende-popup-eta-name {
+  flex: 1; font-size: 11px; font-weight: 700; color: rgba(10,15,13,0.65);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Dark overrides ── */
+.twende-popup-card[data-dark="true"] { background: #111816; }
+.twende-popup-card[data-dark="true"] .twende-popup-name           { color: #F5F5F0; }
+.twende-popup-card[data-dark="true"] .twende-popup-plate-tag       { color: rgba(245,245,240,0.5); }
+.twende-popup-card[data-dark="true"] .twende-popup-rating-value    { color: #F5F5F0; }
+.twende-popup-card[data-dark="true"] .twende-popup-rating-count    { color: rgba(245,245,240,0.4); }
+.twende-popup-card[data-dark="true"] .twende-star-empty            { color: #374151; }
+.twende-popup-card[data-dark="true"] .twende-popup-speed-row       { border-top-color: rgba(255,255,255,0.07); }
+.twende-popup-card[data-dark="true"] .twende-popup-speed-value     { color: rgba(245,245,240,0.5); }
+.twende-popup-card[data-dark="true"] .twende-popup-speed-sep       { color: rgba(255,255,255,0.2); }
+.twende-popup-card[data-dark="true"] .twende-popup-capacity-block  { background: rgba(255,255,255,0.05); }
+.twende-popup-card[data-dark="true"] .twende-popup-capacity-label  { color: rgba(245,245,240,0.5); }
+.twende-popup-card[data-dark="true"] .twende-popup-bar-track       { background: rgba(255,255,255,0.10); }
+.twende-popup-card[data-dark="true"] .twende-popup-onboard         { border-top-color: rgba(255,255,255,0.07); }
+.twende-popup-card[data-dark="true"] .twende-popup-onboard-label   { color: rgba(245,245,240,0.3); }
+.twende-popup-card[data-dark="true"] .twende-popup-onboard-name    { color: #F5F5F0; }
+.twende-popup-card[data-dark="true"] .twende-popup-onboard-dest    { color: rgba(245,245,240,0.45); }
+.twende-popup-card[data-dark="true"] .twende-popup-etas            { border-top-color: rgba(255,255,255,0.07); }
+.twende-popup-card[data-dark="true"] .twende-popup-eta-name        { color: rgba(245,245,240,0.6); }
+
+/* ════════════════════════════════════════
+   BUS MARKER
+   ════════════════════════════════════════ */
+.twende-bus-marker {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 12px rgba(29,158,117,0.40));
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.twende-bus-marker:hover {
+  filter: drop-shadow(0 6px 20px rgba(29,158,117,0.60));
+  transform: translateY(-2px);
+}
+.twende-bus-selected {
+  filter: drop-shadow(0 8px 28px rgba(29,158,117,0.85)) !important;
+  transform: translateY(-5px) scale(1.12) !important;
+}
+.twende-bus-pulse {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -68%);
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 2.5px solid #1D9E75;
+  opacity: 0; pointer-events: none;
+}
+.twende-bus-pulse-on {
+  opacity: 1;
+  animation: twende-ping 1.6s ease-out infinite;
+}
+@keyframes twende-ping {
+  0%   { transform: translate(-50%, -68%) scale(0.6); opacity: 0.9; }
+  100% { transform: translate(-50%, -68%) scale(2.2); opacity: 0; }
+}
+.twende-bus-body {
+  width: 46px; height: 46px;
+  background: linear-gradient(145deg, #25c896, #1D9E75);
+  border-radius: 14px;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.28);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 1;
+}
+/* Waiting at stop — amber */
+.twende-bus-waiting {
+  background: linear-gradient(145deg, #fbbf24, #f59e0b) !important;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.20), 0 0 0 3px rgba(245,158,11,0.2) !important;
+}
+/* Has onboard passengers — slightly brighter green */
+.twende-bus-loaded {
+  background: linear-gradient(145deg, #2dd4aa, #17a67a) !important;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.22), 0 0 0 3px rgba(29,158,117,0.2) !important;
+}
+.twende-bus-plate {
+  margin-top: 5px;
+  background: #ffffff; color: #0A0F0D;
+  font-size: 9px; font-weight: 900;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  padding: 2px 8px; border-radius: 6px;
+  border: 1.5px solid rgba(29,158,117,0.45);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+  letter-spacing: 0.05em; text-transform: uppercase;
+  transition: border-color 0.2s;
+}
+html.dark .twende-bus-plate {
+  background: #1a2420; color: #F5F5F0;
+  border-color: rgba(29,158,117,0.55);
+}
+.twende-plate-paused { border-color: rgba(245,158,11,0.6) !important; }
+
+/* ════════════════════════════════════════
+   STOP MARKERS
+   ════════════════════════════════════════ */
+.twende-stop-marker {
+  display: flex; flex-direction: column; align-items: center;
+  pointer-events: none;
+}
+.twende-stop-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(29,158,117,0.5);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.twende-stop-terminus .twende-stop-dot {
+  width: 14px; height: 14px;
+  background: #1D9E75;
+  box-shadow: 0 2px 8px rgba(29,158,117,0.4);
+}
+.twende-stop-label {
+  margin-top: 3px;
+  font-size: 9px; font-weight: 800;
+  color: #0A0F0D;
+  background: rgba(255,255,255,0.92);
+  padding: 2px 6px; border-radius: 5px;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  letter-spacing: 0.02em;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+html.dark .twende-stop-label {
+  color: #F5F5F0;
+  background: rgba(17,24,22,0.92);
+}
+.twende-stop-terminus .twende-stop-label {
+  font-size: 10px;
+  background: rgba(29,158,117,0.90);
+  color: white;
+}
+
+/* ════════════════════════════════════════
+   ETA BADGE
+   ════════════════════════════════════════ */
+.twende-eta-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 9px; font-weight: 900;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  white-space: nowrap;
+}
+.twende-eta-arriving {
+  background: rgba(29,158,117,0.12); color: #1D9E75;
+  border: 1px solid rgba(29,158,117,0.25);
+  animation: twende-badge-pulse 0.8s ease-in-out infinite;
+}
+.twende-eta-soon {
+  background: rgba(245,158,11,0.10); color: #d97706;
+  border: 1px solid rgba(245,158,11,0.2);
+}
+.twende-eta-later {
+  background: rgba(100,116,139,0.08); color: rgba(100,116,139,0.8);
+  border: 1px solid rgba(100,116,139,0.15);
+}
+html.dark .twende-eta-later { color: rgba(255,255,255,0.4); border-color: rgba(255,255,255,0.1); }
+
+/* ════════════════════════════════════════
+   BOTTOM PANEL
+   ════════════════════════════════════════ */
+.twende-bottom-panel {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 0 12px 20px;
+  pointer-events: none;
+}
+.twende-bottom-panel > * { pointer-events: auto; }
+
+.twende-bottom-panel > div,
+.twende-bottom-panel > button {
+  background: rgba(255,255,255,0.97);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 24px;
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+}
+html.dark .twende-bottom-panel > div,
+html.dark .twende-bottom-panel > button {
+  background: rgba(17,24,22,0.97);
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Panel card wrapper */
+.twende-bottom-panel {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+/* The card itself */
+.twende-panel-card {
+  background: rgba(255,255,255,0.97);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 28px;
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  pointer-events: auto;
+}
+html.dark .twende-panel-card {
+  background: rgba(17,24,22,0.97);
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.4);
+}
+
+.twende-panel-handle {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 100%; padding: 10px 16px 6px;
+  background: transparent; border: none; cursor: pointer;
+}
+.twende-handle-bar {
+  width: 36px; height: 4px; border-radius: 99px;
+  background: rgba(0,0,0,0.12);
+}
+html.dark .twende-handle-bar { background: rgba(255,255,255,0.15); }
+.twende-handle-icon { color: rgba(0,0,0,0.3); }
+html.dark .twende-handle-icon { color: rgba(255,255,255,0.25); }
+
+/* Warning banners */
+.twende-panel-warning {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: rgba(239,68,68,0.07);
+  border-bottom: 1px solid rgba(239,68,68,0.12);
+  font-size: 11px; font-weight: 700; color: #dc2626;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+}
+.twende-panel-warning-amber {
+  background: rgba(245,158,11,0.07);
+  border-bottom-color: rgba(245,158,11,0.12);
+  color: #d97706;
+}
+html.dark .twende-panel-warning { color: #f87171; background: rgba(239,68,68,0.09); }
+html.dark .twende-panel-warning-amber { color: #fbbf24; background: rgba(245,158,11,0.09); }
+
+/* Stats row */
+.twende-stats-row {
+  display: flex; align-items: center;
+  padding: 12px 16px 10px;
+  gap: 0;
+}
+.twende-stat {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.twende-stat-div { width: 1px; height: 28px; background: rgba(0,0,0,0.07); }
+html.dark .twende-stat-div { background: rgba(255,255,255,0.08); }
+.twende-stat-icon-green  { color: #1D9E75; }
+.twende-stat-icon-amber  { color: #f59e0b; }
+.twende-stat-icon-blue   { color: #3b82f6; }
+.twende-stat-icon-purple { color: #8b5cf6; }
+.twende-stat-val {
+  font-size: 12px; font-weight: 900; color: #0A0F0D; line-height: 1;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+}
+html.dark .twende-stat-val { color: #F5F5F0; }
+.twende-stat-lbl {
+  font-size: 8px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: rgba(0,0,0,0.35);
+}
+html.dark .twende-stat-lbl { color: rgba(255,255,255,0.3); }
+
+/* Selected driver strip */
+.twende-selected-strip {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 12px 10px;
+  padding: 10px 14px;
+  background: rgba(29,158,117,0.07);
+  border: 1px solid rgba(29,158,117,0.2);
+  border-radius: 16px;
+}
+html.dark .twende-selected-strip { background: rgba(29,158,117,0.10); }
+.twende-selected-avatar {
+  width: 34px; height: 34px; border-radius: 11px;
+  background: #1D9E75;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.twende-selected-name {
+  font-size: 13px; font-weight: 900; color: #0A0F0D; margin: 0; line-height: 1.1;
+}
+html.dark .twende-selected-name { color: #F5F5F0; }
+.twende-selected-plate {
+  font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.45); margin: 1px 0 0;
+}
+html.dark .twende-selected-plate { color: rgba(255,255,255,0.4); }
+.twende-selected-waiting { color: #f59e0b; }
+.twende-selected-rating {
+  font-size: 13px; font-weight: 900; color: #0A0F0D;
+}
+html.dark .twende-selected-rating { color: #F5F5F0; }
+.twende-view-btn {
+  padding: 6px 12px; border-radius: 10px;
+  background: #1D9E75; color: white;
+  font-size: 10px; font-weight: 900; border: none; cursor: pointer;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  transition: background 0.15s;
+}
+.twende-view-btn:hover { background: #178562; }
+.twende-close-btn {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: rgba(0,0,0,0.06); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(0,0,0,0.4);
+  transition: background 0.15s;
+}
+html.dark .twende-close-btn { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
+.twende-close-btn:hover { background: rgba(0,0,0,0.12); }
+
+/* Panel tabs */
+.twende-panel-tabs {
+  display: flex;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+html.dark .twende-panel-tabs {
+  border-color: rgba(255,255,255,0.07);
+}
+.twende-panel-tab {
+  flex: 1; padding: 9px 4px;
+  font-size: 11px; font-weight: 700;
+  color: rgba(0,0,0,0.38);
+  background: transparent; border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+}
+html.dark .twende-panel-tab { color: rgba(255,255,255,0.3); }
+.twende-panel-tab:hover { color: rgba(0,0,0,0.65); }
+html.dark .twende-panel-tab:hover { color: rgba(255,255,255,0.6); }
+.twende-panel-tab-active {
+  color: #1D9E75 !important;
+  border-bottom-color: #1D9E75 !important;
+}
+.twende-tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  background: #1D9E75; color: white;
+  border-radius: 99px; font-size: 8px; font-weight: 900;
+}
+
+/* Panel scrollable content */
+.twende-panel-content {
+  max-height: 200px; overflow-y: auto;
+  padding: 10px 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.twende-panel-empty {
+  text-align: center; padding: 20px 12px;
+  font-size: 12px; font-weight: 600;
+  color: rgba(0,0,0,0.3);
+  font-family: 'DM Sans', 'Sora', sans-serif;
+}
+html.dark .twende-panel-empty { color: rgba(255,255,255,0.25); }
+
+/* Matatu list rows */
+.twende-matatu-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 14px;
+  background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05);
+  cursor: pointer; text-align: left; width: 100%;
+  transition: all 0.15s;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  margin-bottom: 5px;
+}
+html.dark .twende-matatu-row { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.06); }
+.twende-matatu-row:hover { border-color: rgba(29,158,117,0.3); transform: translateX(2px); }
+.twende-matatu-row-selected {
+  border-color: #1D9E75 !important;
+  background: rgba(29,158,117,0.06) !important;
+}
+html.dark .twende-matatu-row-selected { background: rgba(29,158,117,0.10) !important; }
+.twende-matatu-row-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-moving  { background: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,0.2); }
+.dot-waiting { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
+.twende-matatu-row-plate {
+  font-size: 12px; font-weight: 900; color: #0A0F0D; margin: 0; line-height: 1;
+}
+html.dark .twende-matatu-row-plate { color: #F5F5F0; }
+.twende-matatu-row-driver {
+  font-size: 10px; font-weight: 600; color: rgba(0,0,0,0.4); margin: 1px 0 0;
+}
+html.dark .twende-matatu-row-driver { color: rgba(255,255,255,0.35); }
+.twende-matatu-row-pax {
+  font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.4);
+  margin: 3px 0 0; text-align: right;
+}
+html.dark .twende-matatu-row-pax { color: rgba(255,255,255,0.35); }
+.twende-onboard-badge {
+  color: #1D9E75; font-weight: 900;
+}
+
+/* Stops timeline */
+.twende-stops-list { }
+.twende-stop-row {
+  display: flex; align-items: stretch; gap: 0;
+}
+.twende-stop-timeline {
+  display: flex; flex-direction: column; align-items: center;
+  width: 28px; flex-shrink: 0;
+}
+.twende-stop-line-seg {
+  flex: 1; width: 2px; min-height: 10px;
+  background: rgba(29,158,117,0.22);
+}
+.twende-stop-circle {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(0,0,0,0.15); border: 2px solid white;
+  flex-shrink: 0; margin: 2px 0;
+}
+html.dark .twende-stop-circle { background: rgba(255,255,255,0.2); border-color: #111816; }
+.twende-stop-terminus-dot {
+  background: #1D9E75 !important;
+  width: 12px !important; height: 12px !important;
+  border-color: rgba(29,158,117,0.25) !important;
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.15);
+}
+.twende-stop-info {
+  flex: 1; padding: 8px 8px 8px 10px;
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+}
+.twende-stop-name {
+  font-size: 12px; font-weight: 700; color: rgba(0,0,0,0.5); margin: 0;
+  font-family: 'DM Sans', 'Sora', sans-serif;
+}
+html.dark .twende-stop-name { color: rgba(255,255,255,0.45); }
+.twende-stop-name-terminus { color: #0A0F0D !important; font-weight: 900 !important; }
+html.dark .twende-stop-name-terminus { color: #F5F5F0 !important; }
+.twende-stop-badge {
+  font-size: 8px; font-weight: 900; color: #1D9E75;
+  background: rgba(29,158,117,0.10); border: 1px solid rgba(29,158,117,0.2);
+  padding: 1px 6px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* Onboard tab rows */
+.twende-onboard-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 12px;
+  background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05);
+  margin-bottom: 5px;
+}
+html.dark .twende-onboard-row { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.06); }
+.twende-onboard-avatar {
+  width: 30px; height: 30px; border-radius: 10px;
+  background: #1D9E75; color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; flex-shrink: 0;
+}
+.twende-onboard-name {
+  font-size: 12px; font-weight: 800; color: #0A0F0D; margin: 0;
+}
+html.dark .twende-onboard-name { color: #F5F5F0; }
+.twende-onboard-route {
+  font-size: 10px; color: rgba(0,0,0,0.4); margin: 1px 0 0;
+}
+html.dark .twende-onboard-route { color: rgba(255,255,255,0.35); }
+
+/* Notify button */
+.twende-notify-btn {
+  width: 100%;
+  padding: 14px;
+  background: #1D9E75; color: white;
+  font-weight: 900; font-size: 13px;
+  border: none; border-radius: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(29,158,117,0.3);
+  font-family: 'DM Sans', 'Sora', sans-serif;
+  pointer-events: auto;
+}
+.twende-notify-btn:hover { background: #178562; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(29,158,117,0.4); }
+.twende-notify-active {
+  background: #0A0F0D !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
+}
+html.dark .twende-notify-active {
+  background: #F5F5F0 !important;
+  color: #0A0F0D !important;
+}
