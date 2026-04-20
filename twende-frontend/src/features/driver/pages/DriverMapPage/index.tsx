@@ -9,10 +9,9 @@ import {
   CircleMarker, Popup, useMap,
 } from 'react-leaflet'
 import {
-  ChevronLeft, WifiOff, Loader2, BusFront,
+  ChevronLeft, Loader2, BusFront,
   Radio, RadioTower, Crosshair,
 } from 'lucide-react'
-import toast from 'react-hot-toast'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 

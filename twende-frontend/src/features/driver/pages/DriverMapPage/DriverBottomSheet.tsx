@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react'
 import {
-  BusFront, Navigation, Users, Clock,
+  Navigation, Users, Clock,
   ChevronUp, ChevronDown, AlertTriangle,
   MapPin, ArrowUp, ArrowDown, Zap, Radio, RadioTower,
 } from 'lucide-react'
@@ -191,16 +191,8 @@ const DriverBottomSheet: React.FC<Props> = ({
                 )}
                 {waitingByStop.map(group => {
                   const hasAccepted = group.passengers.some(p => p.status === 'accepted')
-                  const stopETA     = waitingAhead.find(w =>
-                    // match by proximity — waiting_ahead gives eta per passenger
-                    group.passengers.some(p => p.stop_id === group.stop_id)
-                  )
+                 
                   // Find ETA for this stop from waitingAhead
-                  const groupETA = waitingAhead.find(w =>
-                    group.passengers.some(() => true) &&
-                    Math.abs(w.lat - group.lat) < 0.001 &&
-                    Math.abs(w.lng - group.lng) < 0.001
-                  )
 
                   return (
                     <button
@@ -224,7 +216,7 @@ const DriverBottomSheet: React.FC<Props> = ({
                       <div className="bs-matatu-right">
                         {/* Use waitingAhead ETA if available */}
                         {waitingAhead
-                          .filter(w => group.passengers.some(() => true))
+                          .filter(() => group.passengers.some(() => true))
                           .slice(0, 1)
                           .map(w => <ETAChip key={w.id} mins={w.eta_minutes} />)
                         }

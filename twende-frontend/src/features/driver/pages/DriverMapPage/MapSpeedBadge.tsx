@@ -1,6 +1,6 @@
 // src/features/driver/pages/DriverMapPage/MapSpeedBadge.tsx
 import React from 'react'
-import { ArrowUp, ArrowDown, Users, MapPin } from 'lucide-react'
+import { ArrowUp, ArrowDown, Users} from 'lucide-react'
 import type { RouteStop, WaitingAheadPassenger } from './types'
 
 interface Props {

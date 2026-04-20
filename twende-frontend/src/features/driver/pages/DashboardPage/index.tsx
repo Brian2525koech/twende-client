@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   BusFront, Bell, RefreshCw, Sun, Moon,
   Map, TrendingUp, Star, User,
-  Users, ChevronRight, Loader2, UserCheck,
+  Users, ChevronRight, UserCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';

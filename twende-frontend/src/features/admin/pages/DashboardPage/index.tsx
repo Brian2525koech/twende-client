@@ -2,7 +2,7 @@
 import React from 'react';
 import {
   Bus, Users, Route, Zap,
-  TrendingUp, Clock, RefreshCw,
+  TrendingUp, RefreshCw,
   Sun, Moon, AlertCircle, Banknote,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';

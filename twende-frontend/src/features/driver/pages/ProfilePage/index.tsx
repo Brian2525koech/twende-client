@@ -229,7 +229,7 @@ const DriverProfilePage: React.FC = () => {
 
   // FIXED: Backend returns "ratings", not "reviews"
   // We alias it and give a safe default so ReviewList never gets undefined
-  const { profile, images, ratings: reviews = [], breakdown } = data;
+  const { profile, images, reviews = [], breakdown } = data;
 
   const initials = profile.driver_name
     .split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase();
