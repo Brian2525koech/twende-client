@@ -103,8 +103,8 @@ const triggerWaitingPassengerAlerts = async (stopId: number, stopName: string, p
         userId: passenger.user_id,
         title: 'Your Matatu is Arriving! 🚐',
         message: `Matatu ${plateNumber} is less than 2 mins from ${stopName}. Stand by the roadside.`,
-        type: 'trip_update',
-        metadata: { stopId, stopName }
+        type: 'trip',
+        socketData: { stopId, stopName }
       })
 
       // Remove them so they don't get spammed every 5 seconds as it approaches
