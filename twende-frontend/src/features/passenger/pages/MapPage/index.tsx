@@ -72,7 +72,7 @@ const MapPage: React.FC = () => {
   const [arrivingSoon, setArrivingSoon] = useState(false);
   const [arrivingDest, setArrivingDest] = useState<string | undefined>();
 
-  const API = "/api/sim";
+  const API = import.meta.env.VITE_API_URL;;
 
   // ── Dark mode observer ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -126,7 +126,7 @@ const MapPage: React.FC = () => {
 
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`${API}/passenger/${userId}/trip`, {
+        const res = await fetch(`${API}/sim/passenger/${userId}/trip`, {
           headers: { Authorization: `Bearer ${token}` },   // ← using token from context
         });
         const data = await res.json();
@@ -165,7 +165,7 @@ const MapPage: React.FC = () => {
       setWaitingInfo(null);
       if (data.trip_id) {
         // Re-fetch full trip details
-        fetch(`${API}/passenger/${userId}/trip`, {
+        fetch(`${API}/sim/passenger/${userId}/trip`, {
           headers: { Authorization: `Bearer ${token}` },   // ← using token from context
         })
           .then((r) => r.json())
@@ -252,7 +252,7 @@ const MapPage: React.FC = () => {
         return;
       }
       try {
-        const res = await fetch(`${API}/passenger/waiting`, {
+        const res = await fetch(`${API}/sim/passenger/waiting`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -297,7 +297,7 @@ const MapPage: React.FC = () => {
   const handleCancelWaiting = useCallback(async () => {
     if (!userId || !token) return;
     try {
-      await fetch(`${API}/passenger/waiting`, {
+      await fetch(`${API}/sim/passenger/waiting`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },   // ← using token from context
       });

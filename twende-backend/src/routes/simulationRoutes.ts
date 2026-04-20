@@ -46,6 +46,7 @@ import {
   markPassengerWaiting,
   cancelPassengerWaiting,
 } from '../controllers/simulationController'
+import { requireAuth } from '../middleware/authMiddleware'
 
 const router = Router()
 
@@ -68,15 +69,15 @@ router.post('/driver/:driver_id/pay',     driverConfirmCashPayment)
 
 // ── Passenger ─────────────────────────────────────────────────────────────────
 // Current trip or waiting record (live trip screen)
-router.get('/passenger/:passenger_id/trip',    getPassengerCurrentTrip)
+router.get('/passenger/:passenger_id/trip', requireAuth,    getPassengerCurrentTrip)
 
 // Quick waiting-badge poll (home screen)
-router.get('/passenger/:passenger_id/waiting', getPassengerWaitingStatus)
+router.get('/passenger/:passenger_id/waiting', requireAuth, getPassengerWaitingStatus)
 
 // Mark self as waiting at a stop
-router.post('/passenger/waiting',   markPassengerWaiting)
+router.post('/passenger/waiting', requireAuth,   markPassengerWaiting)
 
 // Cancel waiting request
-router.delete('/passenger/waiting', cancelPassengerWaiting)
+router.delete('/passenger/waiting', requireAuth, cancelPassengerWaiting)
 
 export default router
