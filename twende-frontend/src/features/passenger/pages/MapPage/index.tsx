@@ -29,6 +29,7 @@ import BottomSheet from "./BottomSheet";
 import WaitingSheet from "./WaitingSheet";
 import OnboardOverlay from "./OnboardOverlay";
 import "./mappage.css";
+import { authFetch } from "@/lib/authFetch";
 
 // ── Auto-fit to route ─────────────────────────────────────────────────────────
 const FitRoute: React.FC<{ path: [number, number][] }> = ({ path }) => {
@@ -50,6 +51,7 @@ const MapPage: React.FC = () => {
 
   // ── Auth from context (replaces getUserId + getAuthToken) ───────────────────
   const { user, token } = useAuth();
+  //console.log(token);
   const userId = user?.id ?? null;
 
   const { drivers, routePath, stops, loading, socketConnected, socket } =
@@ -126,7 +128,7 @@ const MapPage: React.FC = () => {
 
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`${API}/sim/passenger/${userId}/trip`, {
+        const res = await authFetch(`${API}/sim/passenger/${userId}/trip`, {
           headers: { Authorization: `Bearer ${token}` },   // ← using token from context
         });
         const data = await res.json();
@@ -165,7 +167,7 @@ const MapPage: React.FC = () => {
       setWaitingInfo(null);
       if (data.trip_id) {
         // Re-fetch full trip details
-        fetch(`${API}/sim/passenger/${userId}/trip`, {
+        authFetch(`${API}/sim/passenger/${userId}/trip`, {
           headers: { Authorization: `Bearer ${token}` },   // ← using token from context
         })
           .then((r) => r.json())
@@ -252,7 +254,7 @@ const MapPage: React.FC = () => {
         return;
       }
       try {
-        const res = await fetch(`${API}/sim/passenger/waiting`, {
+        const res = await authFetch(`${API}/sim/passenger/waiting`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -297,7 +299,7 @@ const MapPage: React.FC = () => {
   const handleCancelWaiting = useCallback(async () => {
     if (!userId || !token) return;
     try {
-      await fetch(`${API}/sim/passenger/waiting`, {
+      await authFetch(`${API}/sim/passenger/waiting`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },   // ← using token from context
       });

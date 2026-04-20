@@ -1,15 +1,14 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User } from '@/types';
-
-const API = import.meta.env.VITE_API_URL;
+import { authFetch } from '@/lib/authFetch';   // ← Import here
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
-  refreshUser: () => Promise<void>; // Added this
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -39,37 +38,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('twende_user', JSON.stringify(newUser));
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('twende_token');
     localStorage.removeItem('twende_user');
-    localStorage.removeItem('twende_avatar'); // Clean up profile cache too
-  };
+    localStorage.removeItem('twende_avatar');
+    window.location.href = '/login';   // Force redirect on logout
+  }, []);
 
-  /**
-   * Fetches the latest user profile from the server
-   * and syncs it with state and localStorage.
-   */
   const refreshUser = useCallback(async () => {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API}/auth/me`, { // Adjust endpoint as per your API (e.g., /passenger/me)
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await authFetch('/auth/me');   // Use authFetch here too
 
       if (res.ok) {
         const updatedUser: User = await res.json();
         setUser(updatedUser);
         localStorage.setItem('twende_user', JSON.stringify(updatedUser));
       } else if (res.status === 401) {
-        logout(); // Token might be expired
+        logout();
       }
     } catch (error) {
       console.error('Failed to refresh user session:', error);
+      // If it's a token error, authFetch already handled logout
     }
-  }, [token]);
+  }, [token, logout]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, refreshUser, loading }}>

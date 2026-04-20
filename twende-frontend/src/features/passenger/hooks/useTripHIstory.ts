@@ -1,7 +1,7 @@
 // src/features/passenger/hooks/useTripHistory.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/lib/api/axios'; // use your existing Axios instance (has JWT header)
+import api from '@/lib/api/axios';
 
 export interface Trip {
   id: string;
@@ -11,7 +11,6 @@ export interface Trip {
   date: string;
   time: string;
   fare: number;
-  // 'ongoing' matches DB — frontend treats it the same as pending
   status: 'completed' | 'cancelled' | 'ongoing';
   duration?: string;
   matatuNumber?: string;
@@ -51,6 +50,7 @@ export const useTripHistory = (): UseTripHistoryReturn => {
   const fetchTrips = useCallback(async () => {
     if (!token) {
       setLoading(false);
+      setTrips([]);
       return;
     }
 
@@ -65,14 +65,13 @@ export const useTripHistory = (): UseTripHistoryReturn => {
         ? data
         : data.trips || data.history || [];
 
-      // Newest first
       const sorted = [...tripData].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
       setTrips(sorted);
     } catch (err: any) {
-      console.error('useTripHistory fetch error:', err);
+      console.error('useTripHistory error:', err);
       setError(
         err.response?.data?.message || err.message || 'Failed to load trip history'
       );
@@ -90,22 +89,21 @@ export const useTripHistory = (): UseTripHistoryReturn => {
     await fetchTrips();
   }, [fetchTrips]);
 
-  // Mark an ongoing trip as paid/completed
-  const markPaid = useCallback(
-    async (tripId: string) => {
+  // POST actions - wrapped in try/catch
+  const markPaid = useCallback(async (tripId: string) => {
+    try {
       await api.post(`/trips/${tripId}/pay`);
 
-      // Optimistic update
-      setTrips(prev =>
-        prev.map(t =>
+      setTrips((prev) =>
+        prev.map((t) =>
           t.id === tripId ? { ...t, status: 'completed' as const } : t
         )
       );
-    },
-    []
-  );
+    } catch (err) {
+      console.error('Failed to mark trip as paid:', err);
+    }
+  }, []);
 
-  // Submit a driver rating
   const submitRating = useCallback(
     async (
       tripId: string,
@@ -118,18 +116,21 @@ export const useTripHistory = (): UseTripHistoryReturn => {
         comment: string;
       }
     ) => {
-      await api.post('/ratings', {
-        driver_id: driverId,
-        trip_id: tripId,
-        ...scores,
-      });
+      try {
+        await api.post('/ratings', {
+          driver_id: driverId,
+          trip_id: tripId,
+          ...scores,
+        });
 
-      // Optimistic update — hide Rate button immediately
-      setTrips(prev =>
-        prev.map(t =>
-          t.id === tripId ? { ...t, wasRated: true } : t
-        )
-      );
+        setTrips((prev) =>
+          prev.map((t) =>
+            t.id === tripId ? { ...t, wasRated: true } : t
+          )
+        );
+      } catch (err) {
+        console.error('Failed to submit rating:', err);
+      }
     },
     []
   );
