@@ -27,13 +27,16 @@ import AdminRoutesPage from '@/features/admin/pages/RoutesPage';
 import AdminTripsPage from '@/features/admin/pages/TripsPage';
 import AdminNotificationsPage from '@/features/admin/pages/NotificationsPage';
 
-
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/"
+        element={isStandalone ? <Navigate to="/login" replace /> : <LandingPage />}
+      />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
