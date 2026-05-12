@@ -5,7 +5,10 @@ const API_BASE = import.meta.env.VITE_API_URL;
 
 let isLoggingOut = false;
 
-export const authFetch = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
+export const authFetch = async (
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<Response> => {
   const token = localStorage.getItem('twende_token') || '';
 
   const config: RequestInit = {
@@ -20,38 +23,54 @@ export const authFetch = async (endpoint: string, options: RequestInit = {}): Pr
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, config);
 
-    // ── Handle Token Expiration / Invalid Token ──
     if (res.status === 401) {
-      const data = await res.json().catch(() => ({}));
+      // Auth endpoints returning 401 mean wrong credentials, not an expired
+      // session. Skip the logout flow entirely for those routes.
+      const isAuthEndpoint =
+        endpoint.includes('/auth/login') ||
+        endpoint.includes('/auth/register');
 
-      const errorMsg = data.message?.toLowerCase() || '';
+      if (!isAuthEndpoint) {
+        // Clone the response before reading the body so the caller can still
+        // read it if needed (Response body can only be consumed once).
+        const data = await res.clone().json().catch(() => ({}));
+        const errorMsg: string = data.message?.toLowerCase() || '';
 
-      if (errorMsg.includes('invalid') || 
-          errorMsg.includes('expired') || 
-          errorMsg.includes('unauthorised')) {
+        // Only trigger the session-expired flow when the message is clearly
+        // about the token itself — not about wrong credentials.
+        // "invalid" alone is intentionally excluded here because the backend
+        // returns "Invalid email or password" for credential failures.
+        const isTokenError =
+          errorMsg.includes('expired') ||
+          errorMsg.includes('invalid token') ||
+          errorMsg.includes('jwt') ||
+          errorMsg.includes('token') ||
+          errorMsg.includes('unauthorised');
 
-        if (!isLoggingOut) {
+        if (isTokenError && !isLoggingOut) {
           isLoggingOut = true;
 
-          toast.error("Your session has expired. Please log in again.", {
+          toast.error('Your session has expired. Please log in again.', {
             duration: 5000,
             icon: '🔑',
           });
 
-          // Clear everything
           localStorage.removeItem('twende_token');
           localStorage.removeItem('twende_user');
           localStorage.removeItem('twende_avatar');
 
-          // Redirect to login after a short delay
           setTimeout(() => {
             window.location.href = '/login';
             isLoggingOut = false;
           }, 1000);
-        }
 
-        throw new Error('Token expired');
+          throw new Error('Token expired');
+        }
       }
+
+      // Not a token error (e.g. wrong credentials on login page) — return the
+      // response normally so the calling code can read the message itself.
+      return res;
     }
 
     return res;

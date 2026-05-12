@@ -1,36 +1,23 @@
 // src/simulation/simulator.ts
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// TWENDE SIMULATION ENGINE v3.0  —  Realistic Movement
+// TWENDE SIMULATION ENGINE v3.2  —  auto-board + approach notifications
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// WHAT CHANGED FROM v2.0:
-//
-// ── Movement ──────────────────────────────────────────────────────────────────
-// v2 moved one OSRM waypoint per tick at 100ms = marker teleporting.
-// v3 uses a STEP-BUDGET system: each tick the matatu advances as many
-//    waypoints as needed to cover a fixed real-world distance (e.g. 15m),
-//    then broadcasts ONE position update. This produces smooth, steady
-//    movement on the map at a believable speed regardless of how densely
-//    OSRM packed the waypoints.
-//
-// ── Speed ─────────────────────────────────────────────────────────────────────
-// v2 hardcoded speed = 40 km/h always.
-// v3 computes the actual metres covered per tick interval and converts to
-//    km/h — so the badge shows a realistic fluctuating speed (25-55 km/h)
-//    that slows near stops and when waiting.
-//
-// ── Passengers ────────────────────────────────────────────────────────────────
-// v2 destinations were only 15 waypoints away → passengers alighted in ~1.5s.
-// v3 enforces a MINIMUM_RIDE_DISTANCE_KM (0.8 km) so passengers always ride
-//    for a meaningful stretch. Boarding pauses are 8-15 real seconds.
-//    Alighting announcements arrive well before the stop.
-//
-// ── Spawn pacing ──────────────────────────────────────────────────────────────
-// v2 spawned passengers every ~⅛ of route which was too frequent.
-// v3 spawns 1-2 passengers every MIN_SPAWN_DISTANCE_KM (1.5 km) of travel,
-//    so the map never looks like a video game.
-//
+// WHAT CHANGED FROM v3.1:
+//  - PROXIMITY_WINDOW widened to 18 (was 6) so stop-to-road mapping gaps are
+//    bridged even when DB coords are not exactly on the OSRM path.
+//  - buildStopProximityMap tolerance raised to 1.5 km (was 0.5 km) so stops
+//    slightly off the road are still mapped.
+//  - checkRealPickups uses a secondary distance-from-road-point fallback: if
+//    no stopId matches within the proximity window it checks raw lat/lng
+//    distance (≤ 300 m) so passengers at stops not mapped to a path index are
+//    still picked up.
+//  - New: broadcastUpdate emits a passenger:approaching event via socket when
+//    a matatu's ETA to a waiting passenger's stop is ≤ 10 minutes. This drives
+//    the PWA notification on the frontend without any extra polling.
+//  - Auto-board: passengers are boarded automatically; no manual "Board" tap
+//    needed. Same for alighting — already automatic, no change needed there.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { query } from '../config/db'
@@ -42,51 +29,134 @@ import { sendNotification } from '../utils/notificationHelper'
 
 // ─── Simulation constants ─────────────────────────────────────────────────────
 
-/**
- * How often the simulation loop fires, in ms.
- * This does NOT equal how often the marker moves — the step budget controls that.
- * Keep this at 800ms so the server isn't hammered and socket messages are
- * readable on the client (Leaflet animates between positions smoothly).
- */
-const TICK_MS = 800
-
-/**
- * How far the matatu travels per tick in kilometres, at "normal" city speed.
- * 0.012 km = 12 metres per tick at 800ms ≈ 54 km/h — realistic for open road.
- * Near stops or when idle, this is reduced.
- */
-const METRES_PER_TICK = 12   // metres the matatu covers each 800ms tick
-
-/**
- * Minimum ride distance for virtual passengers, in km.
- * Prevents passengers from boarding and alighting within seconds.
- */
-const MIN_RIDE_KM = 0.8
-
-/**
- * How many boarding stops to make per one-way leg.
- * Passengers are pre-planned at start of each leg and spread evenly.
- * 6 stops × ~8s pause = ~48s of stopping per leg — realistic.
- */
-const STOPS_PER_LEG = 6
-
-/**
- * Minimum distance between virtual passenger spawns, in km.
- * Only used as a safety floor — primary control is STOPS_PER_LEG.
- */
-const MIN_SPAWN_KM = 99999  // disabled — we use pre-planned stops now
-
-/**
- * How many ticks (× TICK_MS) the matatu pauses at a boarding stop.
- * 10 ticks × 800ms = 8 seconds — you can see it stop and wait.
- */
+const TICK_MS              = 800
+const METRES_PER_TICK      = 12
+const MIN_RIDE_KM          = 0.8
+const STOPS_PER_LEG        = 6
+const MIN_SPAWN_KM         = 99999   // disabled — pre-planned stops only
 const BOARDING_PAUSE_TICKS = 10
-
-/**
- * How many waypoints ahead to warn a passenger before they alight.
- * This fires the "prepare to alight" notification.
- */
 const ALIGHT_WARN_WAYPOINTS = 8
+
+// Widened from 6 → 18 to bridge road-snapping gaps between DB stop coords
+// and the actual OSRM path index.
+const PROXIMITY_WINDOW = 18
+
+// Distance (km) used as a fallback when a stop isn't mapped to a path index.
+// 300 m covers typical stop-to-road offsets in Kenyan town centres.
+const STOP_PROXIMITY_FALLBACK_KM = 0.3
+
+// ─── Sim-passenger DB tracking ────────────────────────────────────────────────
+
+const simPassengerCounters: Record<number, number>   = {}
+const simPassengerUserIds:  Map<number, number[]>    = new Map()
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createSimPassengerInDB
+// ─────────────────────────────────────────────────────────────────────────────
+async function createSimPassengerInDB(opts: {
+  driverId:        number
+  routeId:         number
+  routeName:       string
+  boardedAtStop:   string
+  destinationStop: string
+  fare:            number
+  plateNumber:     string
+}): Promise<{ userId: number; tripId: number } | null> {
+  const { driverId, routeId, routeName, boardedAtStop, destinationStop, fare, plateNumber } = opts
+
+  try {
+    simPassengerCounters[driverId] = (simPassengerCounters[driverId] ?? 0) + 1
+    const n     = simPassengerCounters[driverId]
+    const name  = `Sim Passenger ${n}`
+    const email = `sim.passenger.${driverId}.${Date.now()}.${n}@twende.sim`
+
+    const userRes = await query(
+      `INSERT INTO users (name, email, password_hash, role)
+       VALUES ($1, $2, 'sim-no-auth', 'passenger')
+       RETURNING id`,
+      [name, email]
+    )
+    const userId: number = userRes.rows[0].id
+
+    const existing = simPassengerUserIds.get(driverId) ?? []
+    simPassengerUserIds.set(driverId, [...existing, userId])
+
+    const now  = new Date()
+    const date = now.toISOString().slice(0, 10)
+    const time = now.toTimeString().slice(0, 5)
+
+    const tripRes = await query(
+      `INSERT INTO trips
+         (passenger_id, driver_id, route_id, route_name,
+          from_stop, to_stop, fare, date, time,
+          status, payment_status, payment_method,
+          matatu_number, started_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,
+               'ongoing','cash_pending','cash',
+               $10, NOW())
+       RETURNING id`,
+      [userId, driverId, routeId, routeName,
+       boardedAtStop, destinationStop, fare, date, time, plateNumber]
+    )
+    const tripId: number = tripRes.rows[0].id
+
+    console.log(`[Sim] DB passenger created: ${name} (userId=${userId}, tripId=${tripId})`)
+    return { userId, tripId }
+  } catch (e: any) {
+    console.error('[Sim] createSimPassengerInDB failed:', e.message)
+    return null
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// completeSimPassengerTripInDB
+// ─────────────────────────────────────────────────────────────────────────────
+async function completeSimPassengerTripInDB(tripId: number, fare: number): Promise<void> {
+  try {
+    await query(
+      `UPDATE trips
+       SET status = 'completed',
+           payment_status = 'paid',
+           ended_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $1`,
+      [tripId]
+    )
+    console.log(`[Sim] Trip ${tripId} completed (fare KSh ${fare})`)
+  } catch (e: any) {
+    console.error('[Sim] completeSimPassengerTripInDB failed:', e.message)
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cleanupSimPassengers
+// ─────────────────────────────────────────────────────────────────────────────
+async function cleanupSimPassengers(driverId: number): Promise<void> {
+  const userIds = simPassengerUserIds.get(driverId)
+  if (!userIds || userIds.length === 0) return
+
+  console.log(`[Sim] Cleaning up ${userIds.length} sim passengers for driver ${driverId}`)
+  try {
+    await query(
+      `UPDATE trips SET status='cancelled', updated_at=NOW()
+       WHERE passenger_id = ANY($1::int[]) AND status = 'ongoing'`,
+      [userIds]
+    )
+    await query(
+      `UPDATE waiting_passengers SET status='cancelled'
+       WHERE passenger_id = ANY($1::int[])
+         AND status IN ('waiting','accepted','boarded')`,
+      [userIds]
+    )
+    await query(`DELETE FROM users WHERE id = ANY($1::int[])`, [userIds])
+  } catch (e: any) {
+    console.error('[Sim] cleanupSimPassengers failed:', e.message)
+  }
+
+  simPassengerUserIds.delete(driverId)
+  delete simPassengerCounters[driverId]
+  console.log(`[Sim] Cleanup done for driver ${driverId}`)
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -104,7 +174,8 @@ export interface OnboardPassenger {
   paidViaMpesa:        boolean
   isVirtual:           boolean
   fare:                number
-  alightWarned:        boolean   // true once we've sent the "prepare to alight" notice
+  alightWarned:        boolean
+  simUserId:           number | null
 }
 
 interface VirtualWaitingPassenger {
@@ -122,6 +193,7 @@ interface VirtualWaitingPassenger {
 interface SimulatedDriver {
   driverId:        number
   routeId:         number
+  routeName:       string
   plateNumber:     string
   driverName:      string
   averageRating:   number
@@ -133,35 +205,31 @@ interface SimulatedDriver {
   direction:    SimDirection
   timer:        NodeJS.Timeout | null
 
-  // Speed tracking
   lastBroadcastLat: number
   lastBroadcastLng: number
-  currentSpeedKph:  number    // computed from actual movement each tick
+  currentSpeedKph:  number
 
-  // Waiting / boarding state
   isWaiting:    boolean
   pauseCounter: number
-  pauseLimit:   number        // ticks to wait (BOARDING_PAUSE_TICKS)
+  pauseLimit:   number
 
-  // Background passenger count (non-tracked, for display only)
-  passengerCount: number
-
+  passengerCount:    number
   onboardPassengers: OnboardPassenger[]
   virtualWaiting:    VirtualWaitingPassenger[]
 
-  // DB stop triggers
-  stopProximityMap:     Map<number, number>   // stopId → nearest waypoint idx
+  stopProximityMap:     Map<number, number>
   triggeredStopIndices: Set<number>
 
-  // Pre-planned boarding stop indices for this leg (STOPS_PER_LEG evenly spread)
-  plannedStopIndices:    number[]
-  stopsUsedThisLeg:      Set<number>  // which planned stops already triggered
+  plannedStopIndices: number[]
+  stopsUsedThisLeg:   Set<number>
 
-  // Spawn tracking (kept for safety floor)
-  kmSinceLastSpawn: number
+  kmSinceLastSpawn:      number
   virtualPassengerIdSeq: number
+  totalWaypoints:        number
 
-  totalWaypoints: number
+  // Track which waiting passengers have already been sent a 10-min approach
+  // notification so we don't spam them on every tick.
+  approachNotifiedIds: Set<number>
 }
 
 const activeSimulations = new Map<number, SimulatedDriver>()
@@ -202,7 +270,7 @@ const buildRoadWaypoints = async (
   }
 }
 
-// ─── Find nearest waypoint index ─────────────────────────────────────────────
+// ─── Geometry helpers ─────────────────────────────────────────────────────────
 
 const findNearestWaypointIndex = (
   lat: number, lng: number,
@@ -216,37 +284,33 @@ const findNearestWaypointIndex = (
   return closest
 }
 
-// ─── Build stop proximity map ─────────────────────────────────────────────────
-
 const buildStopProximityMap = (
   stops: { id: number; lat: number; lng: number; name: string }[],
   path:  { lat: number; lng: number }[]
 ): Map<number, number> => {
   const map = new Map<number, number>()
+  // Raised tolerance from 0.5 km → 1.5 km.  DB stop coords are often placed
+  // at the centre of a junction or market square, not the exact road pixel.
   for (const stop of stops.slice(1, -1)) {
     const idx  = findNearestWaypointIndex(stop.lat, stop.lng, path)
     const dist = haversineDistance(stop.lat, stop.lng, path[idx].lat, path[idx].lng)
-    if (dist < 0.5) {
+    if (dist < 1.5) {
       map.set(stop.id, idx)
       console.log(`  Stop "${stop.name}" → idx ${idx} (${(dist * 1000).toFixed(0)}m)`)
     } else {
-      console.warn(`  Stop "${stop.name}" ${(dist * 1000).toFixed(0)}m from road — skipped`)
+      // Still map it — just log the large distance so ops can fix coords later.
+      map.set(stop.id, idx)
+      console.warn(`  Stop "${stop.name}" ${(dist * 1000).toFixed(0)}m from road — mapped anyway (idx ${idx})`)
     }
   }
   return map
 }
 
-// ─── Directionality helpers ───────────────────────────────────────────────────
-
 const isAhead = (currentIdx: number, targetIdx: number, dir: SimDirection): boolean =>
   dir === 'forward' ? targetIdx > currentIdx : targetIdx < currentIdx
 
-const PROXIMITY_WINDOW = 6
-
 const isNearIndex = (a: number, b: number): boolean =>
   Math.abs(a - b) <= PROXIMITY_WINDOW
-
-// ─── Fare estimate ────────────────────────────────────────────────────────────
 
 const estimateFare = (
   waypoints: { lat: number; lng: number }[],
@@ -257,33 +321,25 @@ const estimateFare = (
   return Math.max(30, Math.round(30 + haversineDistance(a.lat, a.lng, b.lat, b.lng) * 8))
 }
 
-// ─── Find a destination index that is at least MIN_RIDE_KM ahead ──────────────
-
 const findDestinationAhead = (
-  sim:      SimulatedDriver,
-  fromIdx:  number,
+  sim: SimulatedDriver,
+  fromIdx: number
 ): number | null => {
-  const path = sim.waypoints
+  const path  = sim.waypoints
   const total = path.length
 
   if (sim.direction === 'forward') {
-    // Walk forward from fromIdx until we've covered MIN_RIDE_KM
-    let dist = 0
-    let i    = fromIdx
+    let dist = 0, i = fromIdx
     while (i < total - 1) {
       dist += haversineDistance(path[i].lat, path[i].lng, path[i+1].lat, path[i+1].lng)
       i++
       if (dist >= MIN_RIDE_KM) break
     }
-    // Need at least MIN_RIDE_KM of road ahead
     if (i >= total - 2) return null
-    // Pick a random destination between minDist and 80% of remaining
     const destMax = Math.min(total - 1, i + Math.floor((total - i) * 0.6))
     return destMax > i ? randomInt(i, destMax) : null
   } else {
-    // Backward direction
-    let dist = 0
-    let i    = fromIdx
+    let dist = 0, i = fromIdx
     while (i > 0) {
       dist += haversineDistance(path[i].lat, path[i].lng, path[i-1].lat, path[i-1].lng)
       i--
@@ -294,15 +350,6 @@ const findDestinationAhead = (
     return destMin < i ? randomInt(destMin, i) : null
   }
 }
-
-// ─── Advance waypoint index by a real-world distance budget ──────────────────
-//
-// Instead of moving one waypoint per tick (which causes jerky jumps when
-// OSRM waypoints are close together), we advance as many indices as needed
-// to cover METRES_PER_TICK worth of road, then stop and broadcast.
-// This produces steady, realistic movement regardless of waypoint density.
-//
-// Returns: { newIndex, metresCovered }
 
 const advanceByDistance = (
   sim: SimulatedDriver,
@@ -316,21 +363,13 @@ const advanceByDistance = (
 
   if (sim.direction === 'forward') {
     while (idx < total - 1 && covered < targetMetres / 1000) {
-      const step = haversineDistance(
-        path[idx].lat, path[idx].lng,
-        path[idx + 1].lat, path[idx + 1].lng
-      )
-      covered += step
+      covered += haversineDistance(path[idx].lat, path[idx].lng, path[idx+1].lat, path[idx+1].lng)
       idx++
     }
     if (idx >= total - 1) hitEnd = true
   } else {
     while (idx > 0 && covered < targetMetres / 1000) {
-      const step = haversineDistance(
-        path[idx].lat, path[idx].lng,
-        path[idx - 1].lat, path[idx - 1].lng
-      )
-      covered += step
+      covered += haversineDistance(path[idx].lat, path[idx].lng, path[idx-1].lat, path[idx-1].lng)
       idx--
     }
     if (idx <= 0) hitEnd = true
@@ -339,17 +378,10 @@ const advanceByDistance = (
   return { newIndex: idx, metresCovered: covered * 1000, hitEnd }
 }
 
-// ─── Compute current speed from actual movement ───────────────────────────────
-
-const computeSpeed = (
-  sim:    SimulatedDriver,
-  metresCovered: number
-): number => {
-  // speed (km/h) = distance (km) / time (hours)
-  const distKm   = metresCovered / 1000
-  const timeHrs  = TICK_MS / 3_600_000
-  const raw      = distKm / timeHrs
-  // Smooth with previous speed (exponential moving average, α=0.4)
+const computeSpeed = (sim: SimulatedDriver, metresCovered: number): number => {
+  const distKm  = metresCovered / 1000
+  const timeHrs = TICK_MS / 3_600_000
+  const raw     = distKm / timeHrs
   const smoothed = sim.currentSpeedKph * 0.6 + raw * 0.4
   return Math.round(Math.min(80, Math.max(0, smoothed)))
 }
@@ -360,10 +392,18 @@ export const stopSimulation = (driverId: number): void => {
   const sim = activeSimulations.get(driverId)
   if (sim?.timer) { clearInterval(sim.timer); sim.timer = null }
   activeSimulations.delete(driverId)
+
+  cleanupSimPassengers(driverId).catch(() => {})
+
   query(
     'UPDATE driver_profiles SET is_active = false WHERE user_id = $1',
     [driverId]
   ).catch(() => {})
+
+  try {
+    getIO().emit(`driver:${driverId}:sim_stopped`, {})
+  } catch (_) {}
+
   console.log(`Simulation stopped for driver ${driverId}`)
 }
 
@@ -419,11 +459,9 @@ const completeTrip = async (
   }
 }
 
-// ─── Broadcast position update ────────────────────────────────────────────────
+// ─── Broadcast position update + approach notifications ───────────────────────
 
-const broadcastUpdate = (
-  sim: SimulatedDriver, rawStops: any[]
-): void => {
+const broadcastUpdate = async (sim: SimulatedDriver, rawStops: any[]): Promise<void> => {
   const current = sim.waypoints[sim.currentIndex]
   if (!current) return
 
@@ -496,6 +534,65 @@ const broadcastUpdate = (
   } catch (e) {
     console.error('Socket emit failed (non-fatal):', e)
   }
+
+  // ── 10-minute approach notification for real waiting passengers ────────────
+  // Query only active waiting rows for this route so we can find passengers
+  // whose stop the matatu will reach in ≤ 10 minutes.
+  try {
+    const waitingRows = await query(
+      `SELECT wp.id, wp.passenger_id,
+              s.lat AS stop_lat, s.lng AS stop_lng, s.name AS stop_name
+       FROM waiting_passengers wp
+       JOIN stops s ON s.id = wp.stop_id
+       WHERE wp.route_id = $1
+         AND wp.status IN ('waiting','accepted')
+         AND wp.expires_at > NOW()`,
+      [sim.routeId]
+    )
+
+    for (const row of waitingRows.rows) {
+      const sLat    = parseFloat(row.stop_lat)
+      const sLng    = parseFloat(row.stop_lng)
+      const sIdx    = findNearestWaypointIndex(sLat, sLng, sim.waypoints)
+      const upcoming = isAhead(sim.currentIndex, sIdx, sim.direction)
+      if (!upcoming) continue
+
+      const eta = calculateETA(current.lat, current.lng, sLat, sLng)
+      if (eta === null || eta > 10) continue
+
+      // Only fire once per waiting record per simulation run
+      if (sim.approachNotifiedIds.has(row.id)) continue
+      sim.approachNotifiedIds.add(row.id)
+
+      const passengerId: number = row.passenger_id
+      const stopName: string    = row.stop_name
+      const plate               = sim.plateNumber
+
+      // Socket event — picked up by MapPage in real time
+      getIO().emit(`passenger:${passengerId}:matatu_approaching`, {
+        eta_minutes:  Math.round(eta),
+        stop_name:    stopName,
+        plate_number: plate,
+        driver_name:  sim.driverName,
+        lat:          current.lat,
+        lng:          current.lng,
+        message:      `${plate} is about ${Math.round(eta)} min away from ${stopName}. Get ready!`,
+      })
+
+      // Push notification (PWA) — shows even if the app is in background
+      await sendNotification({
+        userId:  passengerId,
+        title:   `🚌 Matatu approaching — ${Math.round(eta)} min`,
+        message: `${plate} is ${Math.round(eta)} min from ${stopName}. Please be ready to board!`,
+        type:    'trip',
+      })
+
+      console.log(`[Sim] Approach notified: passenger ${passengerId} at "${stopName}" (eta=${Math.round(eta)}m)`)
+    }
+  } catch (e: any) {
+    // Non-fatal — approach notifications are best-effort
+    console.error('[Sim] Approach notification query failed:', e.message)
+  }
 }
 
 // ─── Check alighting ──────────────────────────────────────────────────────────
@@ -503,11 +600,11 @@ const broadcastUpdate = (
 const checkAlighting = async (sim: SimulatedDriver): Promise<void> => {
   if (sim.onboardPassengers.length === 0) return
 
-  // 1. Send advance warning to passengers close to their stop
   for (const p of sim.onboardPassengers) {
     if (!p.alightWarned) {
       const dist = Math.abs(sim.currentIndex - p.destinationPathIdx)
-      if (dist <= ALIGHT_WARN_WAYPOINTS && isAhead(p.destinationPathIdx, sim.currentIndex, sim.direction) === false) {
+      if (dist <= ALIGHT_WARN_WAYPOINTS &&
+          !isAhead(p.destinationPathIdx, sim.currentIndex, sim.direction)) {
         p.alightWarned = true
         if (!p.isVirtual && p.passengerId) {
           getIO().emit(`passenger:${p.passengerId}:alighting_soon`, {
@@ -519,7 +616,6 @@ const checkAlighting = async (sim: SimulatedDriver): Promise<void> => {
     }
   }
 
-  // 2. Actually alight passengers who have reached their stop
   const alighting = sim.onboardPassengers.filter(p =>
     isNearIndex(sim.currentIndex, p.destinationPathIdx)
   )
@@ -541,10 +637,13 @@ const checkAlighting = async (sim: SimulatedDriver): Promise<void> => {
       })
       await completeTrip(p.tripId, p.passengerId, sim.driverId, p.paidViaMpesa, p.fare)
     } else if (p.isVirtual) {
+      if (p.tripId) await completeSimPassengerTripInDB(p.tripId, p.fare)
       getIO().emit(`driver:${sim.driverId}:passenger_alighted`, {
-        trip_id: null, passenger_name: p.passengerName,
+        trip_id:        p.tripId,
+        passenger_name: p.passengerName,
         payment_status: p.paidViaMpesa ? 'paid' : 'cash_pending',
-        fare: p.fare, is_virtual: true,
+        fare:           p.fare,
+        is_virtual:     true,
       })
     }
   }
@@ -565,29 +664,39 @@ const checkVirtualPickups = async (sim: SimulatedDriver): Promise<boolean> => {
   if (toBoard.length === 0) return false
 
   for (const vp of toBoard) {
-    // ── Capacity check — never exceed the vehicle's limit ───────────────────
     const occupied = sim.passengerCount + sim.onboardPassengers.length
     if (occupied >= sim.capacity) {
-      // Remove from waiting — full matatu can't pick anyone up
       sim.virtualWaiting = sim.virtualWaiting.filter(w => w.id !== vp.id)
       console.log(`  Full (${occupied}/${sim.capacity}) — ${vp.name} not boarded`)
       continue
     }
 
     const fare = estimateFare(sim.waypoints, vp.pathIdx, vp.destinationIdx)
+
+    const dbResult = await createSimPassengerInDB({
+      driverId:        sim.driverId,
+      routeId:         sim.routeId,
+      routeName:       sim.routeName,
+      boardedAtStop:   `Stop (idx ${vp.pathIdx})`,
+      destinationStop: vp.destinationName,
+      fare,
+      plateNumber:     sim.plateNumber,
+    })
+
     const onboard: OnboardPassenger = {
       waitingId:           null,
-      passengerId:         null,
+      passengerId:         dbResult?.userId ?? null,
       passengerName:       vp.name,
-      boardedAtStop:       `Road Stop`,
+      boardedAtStop:       `Stop (idx ${vp.pathIdx})`,
       boardedAtPathIdx:    vp.pathIdx,
       destinationStopName: vp.destinationName,
       destinationPathIdx:  vp.destinationIdx,
-      tripId:              null,
+      tripId:              dbResult?.tripId ?? null,
       paidViaMpesa:        Math.random() < 0.35,
       isVirtual:           true,
       fare,
       alightWarned:        false,
+      simUserId:           dbResult?.userId ?? null,
     }
     sim.onboardPassengers.push(onboard)
     sim.virtualWaiting = sim.virtualWaiting.filter(w => w.id !== vp.id)
@@ -599,18 +708,28 @@ const checkVirtualPickups = async (sim: SimulatedDriver): Promise<boolean> => {
       fare,
       is_virtual:      true,
       payment_display: onboard.paidViaMpesa ? '✓ M-Pesa' : '⏳ Cash',
+      trip_id:         dbResult?.tripId ?? null,
     })
-    console.log(`  ✓ [Virtual] ${vp.name} boarded → ${vp.destinationName} | KSh ${fare}`)
+    console.log(`  ✓ [Virtual] ${vp.name} boarded → ${vp.destinationName} | KSh ${fare} | DB tripId=${dbResult?.tripId}`)
   }
 
   return true
 }
 
 // ─── Check real DB passenger pickups ─────────────────────────────────────────
+// FIX: two-stage matching:
+//   1. Index-proximity (isNearIndex) — same as before but with wider window.
+//   2. Raw lat/lng distance fallback — catches stops whose DB coords map to
+//      a path index far from the matatu's current index but are physically
+//      close in metres (e.g. stops not on the OSRM road at all).
 
 const checkRealPickups = async (
   sim: SimulatedDriver, rawStops: any[]
 ): Promise<boolean> => {
+  const current = sim.waypoints[sim.currentIndex]
+  if (!current) return false
+
+  // Stage 1: index-proximity (existing logic, wider PROXIMITY_WINDOW)
   const nearStopIds: number[] = []
   for (const [stopId, pathIdx] of sim.stopProximityMap.entries()) {
     if (
@@ -621,6 +740,24 @@ const checkRealPickups = async (
       nearStopIds.push(stopId)
     }
   }
+
+  // Stage 2: raw distance fallback — find rawStops within 300 m of current
+  // position that weren't captured by stage 1.
+  for (const rawStop of rawStops) {
+    if (nearStopIds.includes(rawStop.id)) continue // already caught
+    const dist = haversineDistance(
+      current.lat, current.lng,
+      parseFloat(rawStop.lat), parseFloat(rawStop.lng)
+    )
+    if (dist <= STOP_PROXIMITY_FALLBACK_KM) {
+      // Only trigger once per position window (reuse triggeredStopIndices)
+      const pathIdx = sim.stopProximityMap.get(rawStop.id) ?? sim.currentIndex
+      if (!sim.triggeredStopIndices.has(pathIdx)) {
+        nearStopIds.push(rawStop.id)
+      }
+    }
+  }
+
   if (nearStopIds.length === 0) return false
 
   try {
@@ -639,7 +776,7 @@ const checkRealPickups = async (
       [sim.routeId, nearStopIds]
     )
 
-    // Mark indices triggered regardless — prevents repeat DB queries
+    // Mark triggered stop indices to avoid double-boarding
     for (const [stopId, pathIdx] of sim.stopProximityMap.entries()) {
       if (nearStopIds.includes(stopId)) {
         for (let w = Math.max(0, pathIdx - PROXIMITY_WINDOW);
@@ -685,6 +822,10 @@ const checkRealPickups = async (
         [tripId, sim.driverId, row.id]
       )
 
+      // Clear approach-notification tracking for this waiting record since
+      // the passenger has now been boarded automatically.
+      sim.approachNotifiedIds.delete(row.id)
+
       sim.onboardPassengers.push({
         waitingId:           row.id,
         passengerId:         row.passenger_id,
@@ -698,14 +839,22 @@ const checkRealPickups = async (
         isVirtual:           false,
         fare,
         alightWarned:        false,
+        simUserId:           null,
       })
 
+      // Auto-board notification: passenger is informed they are now onboard
+      // without needing to press any button.
       await sendNotification({
         userId: row.passenger_id, title: "You're on board! 🚌",
         message: `You have boarded ${sim.plateNumber}. Heading to ${row.destination_name ?? 'your destination'}. Fare: KSh ${fare}.`,
         type: 'trip',
         socketEvent: `passenger:${row.passenger_id}:boarded`,
-        socketData: { trip_id: tripId, plate: sim.plateNumber, destination: row.destination_name, driver_name: sim.driverName, fare },
+        socketData: {
+          trip_id: tripId, plate: sim.plateNumber,
+          destination: row.destination_name, driver_name: sim.driverName, fare,
+          // auto_boarded flag tells the frontend no manual action was needed
+          auto_boarded: true,
+        },
       })
 
       getIO().emit(`driver:${sim.driverId}:passenger_boarded`, {
@@ -715,7 +864,7 @@ const checkRealPickups = async (
       })
 
       didStop = true
-      console.log(`  ✓ [Real] ${row.passenger_name} boarded at "${stopName}"`)
+      console.log(`  ✓ [Real] ${row.passenger_name} AUTO-BOARDED at "${stopName}"`)
     }
 
     return didStop
@@ -726,18 +875,12 @@ const checkRealPickups = async (
 }
 
 // ─── Plan evenly-spaced boarding stops for a leg ─────────────────────────────
-//
-// Instead of spawning passengers based on distance travelled (which causes
-// unpredictable clustering), we pre-compute exactly STOPS_PER_LEG indices
-// spread evenly across the upcoming leg, then place one virtual passenger
-// at each index. This guarantees the matatu stops 5-8 times per leg, no more.
 
 const planLegStops = (sim: SimulatedDriver): void => {
   const total = sim.totalWaypoints
   const start = sim.direction === 'forward' ? sim.currentIndex : 0
   const end   = sim.direction === 'forward' ? total - 1 : sim.currentIndex
 
-  // Guard: need room for at least 2 stops
   if (Math.abs(end - start) < 40) return
 
   const step = Math.floor(Math.abs(end - start) / (STOPS_PER_LEG + 1))
@@ -747,7 +890,6 @@ const planLegStops = (sim: SimulatedDriver): void => {
     const idx = sim.direction === 'forward'
       ? start + step * i
       : start - step * i
-    // Keep in bounds and add some jitter (±5 waypoints) so stops don't look robotic
     const jitter  = randomInt(-5, 5)
     const bounded = Math.max(1, Math.min(total - 2, idx + jitter))
     indices.push(bounded)
@@ -755,37 +897,29 @@ const planLegStops = (sim: SimulatedDriver): void => {
 
   sim.plannedStopIndices = indices
   sim.stopsUsedThisLeg   = new Set()
-
   console.log(`  Planned ${indices.length} boarding stops for this leg`)
 }
 
-// ─── Check if matatu is at a planned stop and spawn a waiting passenger ───────
+// ─── Check if matatu is at a planned stop ─────────────────────────────────────
 
 const checkPlannedStops = (sim: SimulatedDriver): void => {
   for (const stopIdx of sim.plannedStopIndices) {
-    // Already used this stop
     if (sim.stopsUsedThisLeg.has(stopIdx)) continue
-
-    // Not near this stop yet
     if (!isNearIndex(sim.currentIndex, stopIdx)) continue
 
-    // Mark as used immediately so we don't re-trigger
     sim.stopsUsedThisLeg.add(stopIdx)
 
-    // Check capacity — only spawn if there's room
     const occupied = sim.passengerCount + sim.onboardPassengers.length
     if (occupied >= sim.capacity) {
-      console.log(`  Planned stop idx=${stopIdx} skipped — matatu full (${occupied}/${sim.capacity})`)
+      console.log(`  Planned stop idx=${stopIdx} skipped — full (${occupied}/${sim.capacity})`)
       continue
     }
 
     const boardWp = sim.waypoints[stopIdx]
     if (!boardWp) continue
 
-    // Find a destination at least MIN_RIDE_KM ahead
     const destIdx = findDestinationAhead(
-      { ...sim, currentIndex: stopIdx } as SimulatedDriver,
-      stopIdx
+      { ...sim, currentIndex: stopIdx } as SimulatedDriver, stopIdx
     )
     if (destIdx === null) continue
 
@@ -826,10 +960,9 @@ const checkPlannedStops = (sim: SimulatedDriver): void => {
 // ─── Spawn virtual passengers ────────────────────────────────────────────────
 
 const spawnVirtualPassengers = (sim: SimulatedDriver): void => {
-  const count = randomInt(1, 2)   // max 2 at a time — don't flood the map
+  const count = randomInt(1, 2)
 
   for (let i = 0; i < count; i++) {
-    // Find a boarding point at least 20 waypoints ahead
     const minAhead = 20
     let boardIdx: number
 
@@ -845,10 +978,8 @@ const spawnVirtualPassengers = (sim: SimulatedDriver): void => {
       boardIdx = randomInt(end, start)
     }
 
-    // Find a destination at least MIN_RIDE_KM further ahead
     const destIdx = findDestinationAhead(
-      { ...sim, currentIndex: boardIdx } as SimulatedDriver,
-      boardIdx
+      { ...sim, currentIndex: boardIdx } as SimulatedDriver, boardIdx
     )
     if (destIdx === null) continue
 
@@ -889,16 +1020,13 @@ const spawnVirtualPassengers = (sim: SimulatedDriver): void => {
   sim.kmSinceLastSpawn = 0
 }
 
-// ─── Handle terminus: alight everyone, pause, then turn around ───────────────
+// ─── Handle terminus ──────────────────────────────────────────────────────────
 
 const handleReversal = async (
-  sim:    SimulatedDriver,
-  newDir: SimDirection,
-  rawStops: any[]
+  sim: SimulatedDriver, newDir: SimDirection, rawStops: any[]
 ): Promise<void> => {
   console.log(`Driver ${sim.driverId}: reached terminus — alighting all passengers`)
 
-  // 1. Alight every onboard passenger at terminus
   for (const p of sim.onboardPassengers) {
     const terminusName = newDir === 'backward'
       ? (rawStops[rawStops.length - 1]?.name ?? 'End Terminus')
@@ -906,49 +1034,41 @@ const handleReversal = async (
 
     if (!p.isVirtual && p.tripId && p.passengerId) {
       getIO().emit(`passenger:${p.passengerId}:alighting`, {
-        trip_id:     p.tripId,
-        destination: terminusName,
-        fare:        p.fare,
-        message:     `You have reached the terminus (${terminusName}). Thank you for riding with Twende!`,
+        trip_id: p.tripId, destination: terminusName, fare: p.fare,
+        message: `You have reached the terminus (${terminusName}). Thank you for riding with Twende!`,
       })
       await sendNotification({
-        userId:  p.passengerId,
-        title:   "Terminus reached! 📍",
+        userId: p.passengerId, title: 'Terminus reached! 📍',
         message: `You have reached ${terminusName}. Please alight from ${sim.plateNumber}.`,
-        type:    'trip',
+        type: 'trip',
       })
       await completeTrip(p.tripId, p.passengerId, sim.driverId, p.paidViaMpesa, p.fare)
     } else if (p.isVirtual) {
+      if (p.tripId) await completeSimPassengerTripInDB(p.tripId, p.fare)
       getIO().emit(`driver:${sim.driverId}:passenger_alighted`, {
-        trip_id: null, passenger_name: p.passengerName,
+        trip_id: p.tripId, passenger_name: p.passengerName,
         payment_status: p.paidViaMpesa ? 'paid' : 'cash_pending',
         fare: p.fare, is_virtual: true,
       })
     }
   }
 
-  // 2. Clear everyone — matatu is empty at terminus
-  sim.onboardPassengers = []
-  sim.passengerCount    = 0    // reset background count too
+  sim.onboardPassengers    = []
+  sim.passengerCount       = 0
+  sim.approachNotifiedIds  = new Set()  // reset approach tracking on new leg
 
-  // 3. Pause at terminus for boarding (longer pause = loading time)
   sim.isWaiting    = true
   sim.pauseCounter = 0
-  sim.pauseLimit   = BOARDING_PAUSE_TICKS + 8  // ~14s at terminus
+  sim.pauseLimit   = BOARDING_PAUSE_TICKS + 8
 
-  // 4. Set new direction and clear state for next leg
-  sim.direction    = newDir
+  sim.direction = newDir
   sim.triggeredStopIndices.clear()
-  sim.virtualWaiting     = []
-  sim.kmSinceLastSpawn   = 0
+  sim.virtualWaiting   = []
+  sim.kmSinceLastSpawn = 0
 
-  // 5. Pre-plan stops for the next leg
   planLegStops(sim)
-
-  // 6. Seed 1-2 initial passengers for the new leg
   spawnVirtualPassengers(sim)
 
-  // 7. Broadcast direction change
   try {
     const current = sim.waypoints[sim.currentIndex]
     getIO().emit('matatu:direction_changed', {
@@ -960,7 +1080,7 @@ const handleReversal = async (
     })
   } catch (_) {}
 
-  console.log(`Driver ${sim.driverId}: terminus cleared → now heading ${newDir}`)
+  console.log(`Driver ${sim.driverId}: terminus → now heading ${newDir}`)
 }
 
 // ─── START SIMULATION ─────────────────────────────────────────────────────────
@@ -972,7 +1092,6 @@ export const startSimulation = async (
   try {
     if (activeSimulations.has(driverId)) stopSimulation(driverId)
 
-    // ── Load driver ──────────────────────────────────────────────────────────
     const driverResult = await query(
       `SELECT dp.*, u.name AS driver_name, u.profile_image_url
        FROM driver_profiles dp JOIN users u ON u.id = dp.user_id
@@ -982,7 +1101,6 @@ export const startSimulation = async (
     if (driverResult.rows.length === 0) return { success: false, message: 'Driver not found' }
     const driver = driverResult.rows[0]
 
-    // ── Load stops ───────────────────────────────────────────────────────────
     const stopsResult = await query(
       'SELECT id, name, lat, lng, order_index FROM stops WHERE route_id=$1 ORDER BY order_index',
       [driver.route_id]
@@ -994,7 +1112,9 @@ export const startSimulation = async (
       id: s.id, lat: parseFloat(s.lat), lng: parseFloat(s.lng), name: s.name,
     }))
 
-    // ── Build OSRM path ──────────────────────────────────────────────────────
+    const routeResult = await query('SELECT name FROM routes WHERE id=$1', [driver.route_id])
+    const routeName   = routeResult.rows[0]?.name ?? `Route ${driver.route_id}`
+
     console.log(`\nBuilding road path: "${stopPoints[0].name}" → "${stopPoints[stopPoints.length - 1].name}"`)
     const waypoints = await buildRoadWaypoints(
       driver.route_id,
@@ -1005,23 +1125,8 @@ export const startSimulation = async (
     console.log('Building stop proximity indices:')
     const stopProximityMap = buildStopProximityMap(stopPoints, waypoints)
 
-    // ── Speed calibration ────────────────────────────────────────────────────
-    //
-    // speedMultiplier is a 1-10 scale from the admin panel:
-    //   1  = real time (slow demo, good for presentations)
-    //   5  = default (moderate pace)
-    //   10 = fast (stress testing)
-    //
-    // We scale METRES_PER_TICK by this multiplier.
-    // At multiplier=1: 12m/tick × 1 = ~54 km/h apparent speed → realistic
-    // At multiplier=5: 12m/tick × 5 = ~270 km/h apparent → fast demo
-    //
-    // The tick interval stays fixed at TICK_MS (800ms) always,
-    // so the map updates at a steady readable rate regardless of speed.
-
     const metresPerTick = METRES_PER_TICK * Math.max(1, Math.min(10, speedMultiplier))
 
-    // Estimate full lap duration
     let totalRouteKm = 0
     for (let i = 0; i < waypoints.length - 1; i++) {
       totalRouteKm += haversineDistance(
@@ -1029,22 +1134,23 @@ export const startSimulation = async (
         waypoints[i+1].lat, waypoints[i+1].lng
       )
     }
-    const ticksPerLeg = Math.ceil((totalRouteKm * 1000) / metresPerTick)
-    const secondsPerLeg = Math.ceil((ticksPerLeg * TICK_MS) / 1000)
+    const ticksPerLeg    = Math.ceil((totalRouteKm * 1000) / metresPerTick)
+    const secondsPerLeg  = Math.ceil((ticksPerLeg * TICK_MS) / 1000)
 
     const simDriver: SimulatedDriver = {
       driverId,
-      routeId:          driver.route_id,
-      plateNumber:      driver.plate_number,
-      driverName:       driver.driver_name,
-      averageRating:    parseFloat(driver.average_rating) || 0,
-      profileImageUrl:  driver.profile_image_url,
-      capacity:         driver.capacity || 14,
+      routeId:    driver.route_id,
+      routeName,
+      plateNumber:     driver.plate_number,
+      driverName:      driver.driver_name,
+      averageRating:   parseFloat(driver.average_rating) || 0,
+      profileImageUrl: driver.profile_image_url,
+      capacity:        driver.capacity || 14,
 
       waypoints,
-      currentIndex:     0,
-      direction:        'forward',
-      timer:            null,
+      currentIndex: 0,
+      direction:    'forward',
+      timer:        null,
 
       lastBroadcastLat: waypoints[0].lat,
       lastBroadcastLng: waypoints[0].lng,
@@ -1067,9 +1173,10 @@ export const startSimulation = async (
       kmSinceLastSpawn:      0,
       virtualPassengerIdSeq: 0,
       totalWaypoints:        waypoints.length,
+
+      approachNotifiedIds: new Set(),
     }
 
-    // Plan initial leg stops and seed first passengers
     planLegStops(simDriver)
     spawnVirtualPassengers(simDriver)
 
@@ -1079,16 +1186,14 @@ export const startSimulation = async (
         const current = simDriver.waypoints[simDriver.currentIndex]
         if (!current) { simDriver.currentIndex = 0; return }
 
-        // ── Waiting at boarding stop ─────────────────────────────────────────
         if (simDriver.isWaiting) {
           simDriver.pauseCounter++
           simDriver.currentSpeedKph = 0
-          broadcastUpdate(simDriver, rawStops)
+          await broadcastUpdate(simDriver, rawStops)
 
           if (simDriver.pauseCounter >= simDriver.pauseLimit) {
             simDriver.isWaiting    = false
             simDriver.pauseCounter = 0
-            // Small random change in background passenger count
             const delta = randomInt(-1, 2)
             simDriver.passengerCount = Math.max(
               0, Math.min(simDriver.capacity, simDriver.passengerCount + delta)
@@ -1097,10 +1202,8 @@ export const startSimulation = async (
           return
         }
 
-        // ── Check alighting ──────────────────────────────────────────────────
         await checkAlighting(simDriver)
 
-        // ── Check pickups ────────────────────────────────────────────────────
         const pickedVirtual = await checkVirtualPickups(simDriver)
         const pickedReal    = await checkRealPickups(simDriver, rawStops)
 
@@ -1108,26 +1211,19 @@ export const startSimulation = async (
           simDriver.isWaiting    = true
           simDriver.pauseCounter = 0
           simDriver.pauseLimit   = pickedReal ? BOARDING_PAUSE_TICKS + 5 : BOARDING_PAUSE_TICKS
-          broadcastUpdate(simDriver, rawStops)
+          await broadcastUpdate(simDriver, rawStops)
           return
         }
 
-        // ── Advance by distance budget ───────────────────────────────────────
-        const { newIndex, metresCovered, hitEnd } = advanceByDistance(
-          simDriver, metresPerTick
-        )
+        const { newIndex, metresCovered, hitEnd } = advanceByDistance(simDriver, metresPerTick)
 
-        simDriver.currentSpeedKph = computeSpeed(simDriver, metresCovered)
+        simDriver.currentSpeedKph  = computeSpeed(simDriver, metresCovered)
         simDriver.kmSinceLastSpawn += metresCovered / 1000
-        simDriver.currentIndex = newIndex
+        simDriver.currentIndex     = newIndex
 
-        // ── Check planned stops (places a waiting passenger on map) ──────────
         checkPlannedStops(simDriver)
+        await broadcastUpdate(simDriver, rawStops)
 
-        // ── Broadcast position ───────────────────────────────────────────────
-        broadcastUpdate(simDriver, rawStops)
-
-        // ── DB position update (fire-and-forget) ─────────────────────────────
         const pos = simDriver.waypoints[simDriver.currentIndex]
         if (pos) {
           query(
@@ -1136,7 +1232,6 @@ export const startSimulation = async (
           ).catch((e: Error) => console.error('DB pos update failed:', e.message))
         }
 
-        // ── Handle terminus ──────────────────────────────────────────────────
         if (hitEnd) {
           simDriver.currentIndex = simDriver.direction === 'forward'
             ? simDriver.totalWaypoints - 1
@@ -1153,17 +1248,16 @@ export const startSimulation = async (
     activeSimulations.set(driverId, simDriver)
 
     console.log(
-      `\n✓ Simulation v3.0 started for driver ${driverId}` +
-      `\n  Route ${driver.route_id} | ${waypoints.length} waypoints | ${totalRouteKm.toFixed(1)} km` +
+      `\n✓ Simulation v3.2 started for driver ${driverId}` +
+      `\n  Route ${driver.route_id} (${routeName}) | ${waypoints.length} waypoints | ${totalRouteKm.toFixed(1)} km` +
       `\n  Speed multiplier: ${speedMultiplier}x | ${metresPerTick}m/tick @ ${TICK_MS}ms` +
       `\n  One-way leg: ~${Math.round(secondsPerLeg / 60)}m ${secondsPerLeg % 60}s` +
-      `\n  Passenger spawn every: ${MIN_SPAWN_KM} km` +
       `\n  DB stops mapped: ${stopProximityMap.size}`
     )
 
     return {
       success: true,
-      message: `Simulation started. One-way leg: ~${Math.round(secondsPerLeg / 60)}m ${secondsPerLeg % 60}s. Matatu will reverse at terminus.`,
+      message: `Simulation started. One-way leg: ~${Math.round(secondsPerLeg / 60)}m ${secondsPerLeg % 60}s.`,
     }
   } catch (error) {
     console.error('startSimulation error:', error)
@@ -1226,7 +1320,6 @@ export const getSimulationStatus = (): object => {
       totalWaypoints:  sim.totalWaypoints,
       progressPercent: Math.round((sim.currentIndex / sim.totalWaypoints) * 100),
       currentPosition: current ? { lat: current.lat, lng: current.lng } : null,
-      speedMultiplier: 1,   // v3 uses metresPerTick scale, not this field
       currentSpeedKph: sim.currentSpeedKph,
       isRunning:       sim.timer !== null,
       isWaiting:       sim.isWaiting,
@@ -1241,6 +1334,7 @@ export const getSimulationStatus = (): object => {
         payment_display: p.paidViaMpesa ? '✓ M-Pesa' : '⏳ Cash',
         is_virtual:      p.isVirtual,
         fare:            p.fare,
+        trip_id:         p.tripId,
       })),
       virtualWaiting:  sim.virtualWaiting.length,
     }

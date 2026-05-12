@@ -23,36 +23,47 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle 401 (expired/invalid token) globally
+// Response interceptor - handle expired/invalid TOKEN errors globally
+// NOTE: Auth routes (/auth/login, /auth/register) are excluded because a 401
+// from those endpoints means wrong credentials, not an expired session.
 api.interceptors.response.use(
-  (response) => response,                    // Pass through successful responses
+  (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      const message = error.response?.data?.message?.toLowerCase() || '';
+    const requestUrl: string = error.config?.url || '';
+    const isAuthRoute =
+      requestUrl.includes('/auth/login') ||
+      requestUrl.includes('/auth/register');
 
-      // Check for expired or invalid token messages
-      if (
-        message.includes('invalid') ||
+    if (error.response?.status === 401 && !isAuthRoute) {
+      const message: string =
+        error.response?.data?.message?.toLowerCase() || '';
+
+      // Only treat as token error when the message is specific to tokens/sessions.
+      // "invalid" alone is NOT used here because the backend also returns
+      // "Invalid email or password" for bad credentials — matching that word
+      // would incorrectly trigger a session-expired toast on the login page.
+      const isTokenError =
         message.includes('expired') ||
+        message.includes('invalid token') ||
+        message.includes('jwt') ||
         message.includes('unauthorised') ||
-        message.includes('unauthorized')
-      ) {
-        // Prevent multiple logout toasts
+        message.includes('unauthorized') ||
+        message.includes('token');
+
+      if (isTokenError) {
         const isLoggingOut = sessionStorage.getItem('isLoggingOut');
         if (!isLoggingOut) {
           sessionStorage.setItem('isLoggingOut', 'true');
 
-          toast.error("Your session has expired. Please log in again.", {
+          toast.error('Your session has expired. Please log in again.', {
             duration: 5000,
             icon: '🔑',
           });
 
-          // Clear all auth data
           localStorage.removeItem('twende_token');
           localStorage.removeItem('twende_user');
           localStorage.removeItem('twende_avatar');
 
-          // Redirect to login
           setTimeout(() => {
             window.location.href = '/login';
             sessionStorage.removeItem('isLoggingOut');
@@ -61,7 +72,7 @@ api.interceptors.response.use(
       }
     }
 
-    // Always reject so individual components can still catch errors if needed
+    // Always reject so individual pages can still handle errors themselves
     return Promise.reject(error);
   }
 );

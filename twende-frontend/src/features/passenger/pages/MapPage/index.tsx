@@ -1,4 +1,16 @@
 // src/features/passenger/pages/MapPage/index.tsx
+// CHANGES FROM PREVIOUS VERSION:
+//  - Auto-board: passenger is boarded automatically when the matatu arrives.
+//    No manual "Board" button needed. The `passenger:boarded` socket event
+//    (with auto_boarded=true) triggers the state change.
+//  - 10-minute approach notification: `passenger:matatu_approaching` socket
+//    event shows a prominent toast + triggers a PWA notification request.
+//    The toast stays visible for 12 s and shows the ETA + plate.
+//  - Auto-alight: `passenger:alighting` socket event already fired by the
+//    backend — UI now shows a clear "You've arrived" card and resets state.
+//  - PWA notification helper: requests Notification permission once on mount
+//    and sends a browser Notification when approaching (works in background).
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -15,7 +27,7 @@ import toast from "react-hot-toast";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import { useAuth } from "@/contexts/AuthContext";           // ← NEW IMPORT
+import { useAuth } from "@/contexts/AuthContext";
 import { useLiveTracking } from "../../hooks/useLiveTracking";
 import type { Driver, WaitingInfo, WaitingStatus, OnboardTrip } from "./types";
 import { toNum, hasPosition, driverKey } from "./types";
@@ -30,6 +42,41 @@ import WaitingSheet from "./WaitingSheet";
 import OnboardOverlay from "./OnboardOverlay";
 import "./mappage.css";
 import { authFetch } from "@/lib/authFetch";
+
+// ── PWA notification helper ───────────────────────────────────────────────────
+// Sends a native browser notification if permission is granted.
+// Works when the app is backgrounded or the screen is locked (PWA).
+function sendBrowserNotification(title: string, body: string, tag?: string) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  try {
+    // Use service worker registration for reliable PWA delivery
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then((reg) => {
+        // Cast to any: vibrate/badge are valid in ServiceWorkerRegistration
+        // .showNotification but absent from TypeScript's NotificationOptions.
+        reg.showNotification(title, {
+          body,
+          tag: tag ?? "twende-alert",
+          icon: "/icons/icon-192x192.png",
+          badge: "/icons/badge-72x72.png",
+          requireInteraction: true,
+        } as any);
+      });
+    } else {
+      new Notification(title, { body, tag: tag ?? "twende-alert" });
+    }
+  } catch (_) {}
+}
+
+// Request notification permission once — call early so users aren't surprised
+// when the first approach toast fires.
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+}
 
 // ── Auto-fit to route ─────────────────────────────────────────────────────────
 const FitRoute: React.FC<{ path: [number, number][] }> = ({ path }) => {
@@ -49,9 +96,7 @@ const MapPage: React.FC = () => {
   const { routeId } = useParams<{ routeId: string }>();
   const navigate = useNavigate();
 
-  // ── Auth from context (replaces getUserId + getAuthToken) ───────────────────
   const { user, token } = useAuth();
-  //console.log(token);
   const userId = user?.id ?? null;
 
   const { drivers, routePath, stops, loading, socketConnected, socket } =
@@ -59,9 +104,7 @@ const MapPage: React.FC = () => {
 
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
-  const [userPosition, setUserPosition] = useState<[number, number] | null>(
-    null,
-  );
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [isDark, setIsDark] = useState(
     document.documentElement.classList.contains("dark"),
   );
@@ -74,8 +117,6 @@ const MapPage: React.FC = () => {
   const [arrivingSoon, setArrivingSoon] = useState(false);
   const [arrivingDest, setArrivingDest] = useState<string | undefined>();
 
-  const API = import.meta.env.VITE_API_URL;;
-
   // ── Dark mode observer ─────────────────────────────────────────────────────
   useEffect(() => {
     const obs = new MutationObserver(() =>
@@ -86,6 +127,11 @@ const MapPage: React.FC = () => {
       attributeFilter: ["class"],
     });
     return () => obs.disconnect();
+  }, []);
+
+  // ── Request PWA notification permission on mount ───────────────────────────
+  useEffect(() => {
+    requestNotificationPermission();
   }, []);
 
   // ── Geolocation ────────────────────────────────────────────────────────────
@@ -128,9 +174,7 @@ const MapPage: React.FC = () => {
 
     const fetchStatus = async () => {
       try {
-        const res = await authFetch(`${API}/sim/passenger/${userId}/trip`, {
-          headers: { Authorization: `Bearer ${token}` },   // ← using token from context
-        });
+        const res = await authFetch(`/sim/passenger/${userId}/trip`);
         const data = await res.json();
 
         if (data.status === "waiting" && data.waiting) {
@@ -161,51 +205,128 @@ const MapPage: React.FC = () => {
   useEffect(() => {
     if (!socket || !userId || !token) return;
 
-    // Picked up — transition to onboard
+    // ── Matatu approaching (≤ 10 min away) — fired by simulator ──────────
+    // Auto-triggered: no user action needed. Shows prominent toast + PWA notif.
+    const onApproaching = (data: any) => {
+      const eta   = data.eta_minutes ?? "?";
+      const plate = data.plate_number ?? "Your matatu";
+      const stop  = data.stop_name ?? "your stop";
+
+      // Long-lived toast that stays until dismissed or the matatu arrives
+      toast(
+        (t) => (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <strong style={{ fontSize: 15 }}>
+              🚌 {plate} is {eta} min away!
+            </strong>
+            <span style={{ fontSize: 13, opacity: 0.85 }}>
+              Heading to {stop} — please be ready to board.
+            </span>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              style={{
+                marginTop: 4,
+                padding: "4px 10px",
+                borderRadius: 6,
+                border: "none",
+                background: "#1D9E75",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: 12,
+                alignSelf: "flex-end",
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        ),
+        {
+          duration: 12000,
+          icon: "🔔",
+          style: { maxWidth: 340 },
+        },
+      );
+
+      // PWA browser notification (works when app is backgrounded / screen off)
+      sendBrowserNotification(
+        `🚌 ${plate} arriving in ${eta} min`,
+        `Get ready at ${stop}. Your matatu is almost there!`,
+        `approaching-${userId}`,
+      );
+    };
+
+    // ── Auto-boarded ──────────────────────────────────────────────────────
+    // Passenger is picked up automatically — no Board button.
     const onBoarded = (data: any) => {
       setWaitingStatus("onboard");
       setWaitingInfo(null);
+
       if (data.trip_id) {
-        // Re-fetch full trip details
-        authFetch(`${API}/sim/passenger/${userId}/trip`, {
-          headers: { Authorization: `Bearer ${token}` },   // ← using token from context
-        })
+        authFetch(`/sim/passenger/${userId}/trip`)
           .then((r) => r.json())
           .then((d) => {
             if (d.trip) setCurrentTrip(d.trip);
           })
           .catch(() => {});
       }
+
+      const dest = data.destination ?? "your destination";
+      const fare = data.fare ? ` • KSh ${data.fare}` : "";
+
       toast.success(
-        `🚌 You've been picked up! Heading to ${data.destination ?? "your destination"}`,
-        { duration: 5000 },
+        `🚌 You're on board! Heading to ${dest}${fare}`,
+        { duration: 6000 },
+      );
+
+      // PWA notification confirming board (helpful if app was backgrounded)
+      sendBrowserNotification(
+        "You're on board! 🚌",
+        `Heading to ${dest}${fare}. Sit back and relax.`,
+        `boarded-${userId}`,
       );
     };
 
-    // Alighting soon warning
+    // ── Approaching destination ────────────────────────────────────────────
     const onAlightingSoon = (data: any) => {
       setWaitingStatus("arriving");
       setArrivingSoon(true);
       setArrivingDest(data.destination);
-      toast(`📍 Approaching ${data.destination} — prepare to alight`, {
-        duration: 6000,
-        icon: "🔔",
-      });
+
+      toast(
+        `📍 Approaching ${data.destination ?? "your stop"} — prepare to alight`,
+        { duration: 8000, icon: "🔔" },
+      );
+
+      sendBrowserNotification(
+        `📍 Almost at ${data.destination ?? "your stop"}`,
+        "Prepare to alight — your stop is coming up.",
+        `alighting-soon-${userId}`,
+      );
     };
 
-    // Alighted — trip complete
+    // ── Auto-alighted ─────────────────────────────────────────────────────
+    // Fired automatically by the backend — no "Alight" button needed.
     const onAlighting = (data: any) => {
       setWaitingStatus("idle");
       setCurrentTrip(null);
       setArrivingSoon(false);
       setArrivingDest(undefined);
+
+      const dest = data.destination ?? "your destination";
+      const fare = data.fare ? ` Fare: KSh ${data.fare}.` : "";
+
       toast.success(
-        `✅ Arrived at ${data.destination}! ${data.fare ? `Fare: KSh ${data.fare}` : ""}`,
-        { duration: 6000 },
+        `✅ Arrived at ${dest}!${fare} Thank you for riding with Twende.`,
+        { duration: 7000 },
+      );
+
+      sendBrowserNotification(
+        `✅ You've arrived at ${dest}`,
+        `${fare} Thank you for riding with Twende!`,
+        `alighted-${userId}`,
       );
     };
 
-    // Payment confirmed
     const onPaymentConfirmed = (data: any) => {
       setCurrentTrip((prev) =>
         prev ? { ...prev, payment_status: "paid" } : prev,
@@ -215,12 +336,14 @@ const MapPage: React.FC = () => {
       });
     };
 
+    socket.on(`passenger:${userId}:matatu_approaching`, onApproaching);
     socket.on(`passenger:${userId}:boarded`, onBoarded);
     socket.on(`passenger:${userId}:alighting_soon`, onAlightingSoon);
     socket.on(`passenger:${userId}:alighting`, onAlighting);
     socket.on(`passenger:${userId}:payment_confirmed`, onPaymentConfirmed);
 
     return () => {
+      socket.off(`passenger:${userId}:matatu_approaching`, onApproaching);
       socket.off(`passenger:${userId}:boarded`, onBoarded);
       socket.off(`passenger:${userId}:alighting_soon`, onAlightingSoon);
       socket.off(`passenger:${userId}:alighting`, onAlighting);
@@ -228,7 +351,7 @@ const MapPage: React.FC = () => {
     };
   }, [socket, userId, token]);
 
-  // ── Notify toast when a matatu stops ──────────────────────────────────────
+  // ── Notify toast when a matatu stops (general "stop nearby" alert) ─────────
   const prevWaiting = useRef<string>("");
   useEffect(() => {
     if (!notifyEnabled) return;
@@ -254,12 +377,9 @@ const MapPage: React.FC = () => {
         return;
       }
       try {
-        const res = await authFetch(`${API}/sim/passenger/waiting`, {
+        const res = await authFetch(`/sim/passenger/waiting`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,          // ← using token from context
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             route_id: parseInt(routeId, 10),
             stop_id: stopId,
@@ -285,9 +405,13 @@ const MapPage: React.FC = () => {
         setWaitingStatus("waiting");
         setShowWaitingSheet(false);
 
-        toast.success(`📍 You're marked waiting at ${data.stop_name}!`, {
-          duration: 4000,
-        });
+        toast.success(
+          `📍 You're marked waiting at ${data.stop_name}! We'll notify you when your matatu is close.`,
+          { duration: 5000 },
+        );
+
+        // Prompt for notification permission now that they've shown intent
+        await requestNotificationPermission();
       } catch {
         toast.error("Network error — please try again");
       }
@@ -299,9 +423,8 @@ const MapPage: React.FC = () => {
   const handleCancelWaiting = useCallback(async () => {
     if (!userId || !token) return;
     try {
-      await authFetch(`${API}/sim/passenger/waiting`, {
+      await authFetch(`/sim/passenger/waiting`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },   // ← using token from context
       });
       setWaitingStatus("idle");
       setWaitingInfo(null);
@@ -410,7 +533,6 @@ const MapPage: React.FC = () => {
 
         <FitRoute path={routePath} />
 
-        {/* Route polyline glow */}
         {routePath.length > 0 && (
           <>
             <Polyline
@@ -446,7 +568,6 @@ const MapPage: React.FC = () => {
           </>
         )}
 
-        {/* User position */}
         {userPosition && (
           <>
             <Marker position={userPosition} icon={createUserIcon()} />
@@ -464,7 +585,6 @@ const MapPage: React.FC = () => {
           </>
         )}
 
-        {/* ── Waiting passenger marker (self) ── */}
         {waitingStatus === "waiting" &&
           waitingInfo &&
           waitingInfo.stop_lat &&
@@ -488,7 +608,6 @@ const MapPage: React.FC = () => {
             </>
           )}
 
-        {/* Bus markers */}
         {visibleDrivers.map((d) => {
           const isSelected = selectedDriver
             ? driverKey(selectedDriver) === driverKey(d)
@@ -523,7 +642,6 @@ const MapPage: React.FC = () => {
           );
         })}
 
-        {/* Accuracy ring on selected bus */}
         {selectedDriver && hasPosition(selectedDriver) && (
           <Circle
             center={[
@@ -542,7 +660,6 @@ const MapPage: React.FC = () => {
         )}
       </MapContainer>
 
-      {/* ── ONBOARD OVERLAY ── */}
       {isOnboard && currentTrip && (
         <OnboardOverlay
           trip={currentTrip}
@@ -551,7 +668,6 @@ const MapPage: React.FC = () => {
         />
       )}
 
-      {/* ── BOTTOM SHEET ── */}
       <BottomSheet
         drivers={drivers as Driver[]}
         stops={stops}
@@ -567,7 +683,6 @@ const MapPage: React.FC = () => {
         onOpenWaiting={() => setShowWaitingSheet(true)}
       />
 
-      {/* ── WAITING SHEET MODAL ── */}
       {showWaitingSheet && (
         <WaitingSheet
           stops={stops}

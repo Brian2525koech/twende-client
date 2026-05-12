@@ -299,7 +299,7 @@ const DriverMapPage: React.FC = () => {
       </MapContainer>
 
       {/* ── NO POSITION OVERLAY (if live but no GPS yet) ── */}
-      {isLive && !driverPosition && (
+      {simRunning && !driverPosition && (
         <div className="mp-loading-overlay" style={{ background: 'rgba(0,0,0,0.25)' }}>
           <div className="mp-loading-card">
             <div className="mp-loading-icon">

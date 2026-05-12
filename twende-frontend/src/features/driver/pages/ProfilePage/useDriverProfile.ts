@@ -54,7 +54,15 @@ export const useDriverProfile = (): UseDriverProfileReturn => {
     try {
       setLoading(true);
       const res = await api.get('/driver/profile');
-      setData(res.data);
+      // Backend sends { profile, images, reviews, breakdown }.
+      // Defensively fall back so the page never crashes if an older backend
+      // still sends "ratings" instead of "reviews".
+      const payload = res.data;
+      setData({
+        ...payload,
+        reviews:   payload.reviews   ?? payload.ratings ?? [],
+        breakdown: payload.breakdown ?? null,
+      });
     } catch (err) {
       console.error('Driver profile fetch failed:', err);
       toast.error('Could not load your profile');

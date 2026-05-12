@@ -237,7 +237,7 @@ export const getDriverWaiting = async (req: Request, res: Response): Promise<voi
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
- 
+
 /** Extract driver_profile.id for the authenticated user */
 async function getDriverProfileId(userId: number): Promise<number | null> {
   const r = await query(
@@ -246,14 +246,14 @@ async function getDriverProfileId(userId: number): Promise<number | null> {
   );
   return r.rows[0]?.id ?? null;
 }
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // GET /api/driver/profile
 // Returns the full DriverProfilePageData the frontend hook expects
 // ══════════════════════════════════════════════════════════════════════════
 export const getDriverProfile = async (req: AuthRequest, res: Response) => {
   const userId = (req as any).user!.id;
- 
+
   try {
     // 1. Core profile row
     const profileRes = await query(
@@ -291,13 +291,13 @@ export const getDriverProfile = async (req: AuthRequest, res: Response) => {
        WHERE u.id = $1`,
       [userId],
     );
- 
+
     if (!profileRes.rows[0]) {
       return res.status(404).json({ message: 'Driver profile not found' });
     }
- 
+
     const row = profileRes.rows[0];
- 
+
     // 2. Stop count for the route
     let stop_count = 0;
     if (row.route_id) {
@@ -307,7 +307,7 @@ export const getDriverProfile = async (req: AuthRequest, res: Response) => {
       );
       stop_count = parseInt(stopRes.rows[0].count, 10);
     }
- 
+
     // 3. Matatu images
     const imagesRes = await query(
       `SELECT id, image_url, caption, order_index, created_at
@@ -316,12 +316,12 @@ export const getDriverProfile = async (req: AuthRequest, res: Response) => {
        ORDER BY order_index ASC, created_at ASC`,
       [row.driver_profile_id],
     );
- 
-    // 4. Recent ratings (last 10 for the profile page preview)
+
+    // 4. Recent reviews (last 10 for the profile page preview)
     const ratingsRes = await query(
       `SELECT
          rat.id,
-         u.name          AS passenger_name,
+         COALESCE(u.name, 'Anonymous') AS passenger_name,
          rat.punctuality_score,
          rat.comfort_score,
          rat.safety_score,
@@ -335,7 +335,33 @@ export const getDriverProfile = async (req: AuthRequest, res: Response) => {
        LIMIT 10`,
       [userId],
     );
- 
+
+    // 5. Compute breakdown for RatingSummary
+    const reviewRows = ratingsRes.rows;
+    const count = reviewRows.length;
+
+    const avgField = (field: string): number =>
+      count > 0
+        ? parseFloat(
+            (reviewRows.reduce((sum, r) => sum + Number(r[field]), 0) / count).toFixed(2),
+          )
+        : 0;
+
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const r of reviewRows) {
+      const s = Number(r.overall_score);
+      if (s >= 1 && s <= 5) distribution[s] = (distribution[s] ?? 0) + 1;
+    }
+
+    const breakdown = count > 0
+      ? {
+          avg_punctuality: avgField('punctuality_score'),
+          avg_comfort:     avgField('comfort_score'),
+          avg_safety:      avgField('safety_score'),
+          distribution,
+        }
+      : null;
+
     return res.json({
       profile: {
         user_id:            row.user_id,
@@ -355,6 +381,8 @@ export const getDriverProfile = async (req: AuthRequest, res: Response) => {
         total_trips:        row.total_trips ?? 0,
         average_rating:     parseFloat(row.average_rating) || 0,
         total_ratings:      row.total_ratings ?? 0,
+        route_name:         row.route_name ?? null,
+        route_colour:       row.route_colour ?? null,
         route: row.route_id
           ? {
               id:          row.route_id,
@@ -366,15 +394,16 @@ export const getDriverProfile = async (req: AuthRequest, res: Response) => {
             }
           : null,
       },
-      images:  imagesRes.rows,
-      ratings: ratingsRes.rows,
+      images:    imagesRes.rows,
+      reviews:   reviewRows,   // ← was "ratings", now matches frontend destructuring
+      breakdown,               // ← new: powers RatingSummary bars + category averages
     });
   } catch (err) {
     console.error('getDriverProfile error:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // PATCH /api/driver/profile/name
 // Body: { name: string }
@@ -382,11 +411,11 @@ export const getDriverProfile = async (req: AuthRequest, res: Response) => {
 export const updateDriverName = async (req: AuthRequest, res: Response) => {
   const userId = (req as any).user!.id;
   const { name } = req.body as { name: string };
- 
+
   if (!name || name.trim().length < 2) {
     return res.status(400).json({ message: 'Name must be at least 2 characters' });
   }
- 
+
   try {
     await query(
       'UPDATE users SET name = $1 WHERE id = $2',
@@ -398,7 +427,7 @@ export const updateDriverName = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // PATCH /api/driver/profile/password
 // Body: { current_password: string, new_password: string }
@@ -409,14 +438,14 @@ export const updateDriverPassword = async (req: AuthRequest, res: Response) => {
     current_password: string;
     new_password: string;
   };
- 
+
   if (!current_password || !new_password) {
     return res.status(400).json({ message: 'Both passwords are required' });
   }
   if (new_password.length < 6) {
     return res.status(400).json({ message: 'New password must be at least 6 characters' });
   }
- 
+
   try {
     const userRes = await query(
       'SELECT password_hash FROM users WHERE id = $1',
@@ -427,7 +456,7 @@ export const updateDriverPassword = async (req: AuthRequest, res: Response) => {
     if (!valid) {
       return res.status(401).json({ message: 'Current password is incorrect' });
     }
- 
+
     const newHash = await bcrypt.hash(new_password, 10);
     await query(
       'UPDATE users SET password_hash = $1 WHERE id = $2',
@@ -439,7 +468,7 @@ export const updateDriverPassword = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // PATCH /api/driver/profile/avatar
 // Body: { profile_image_url: string }  (base64 data URL or hosted URL)
@@ -447,11 +476,11 @@ export const updateDriverPassword = async (req: AuthRequest, res: Response) => {
 export const updateDriverAvatar = async (req: AuthRequest, res: Response) => {
   const userId = (req as any).user!.id;
   const { profile_image_url } = req.body as { profile_image_url: string };
- 
+
   if (!profile_image_url) {
     return res.status(400).json({ message: 'profile_image_url is required' });
   }
- 
+
   try {
     await query(
       'UPDATE users SET profile_image_url = $1 WHERE id = $2',
@@ -463,7 +492,7 @@ export const updateDriverAvatar = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // PATCH /api/driver/profile/vehicle
 // Body: { vehicle_make, vehicle_model, vehicle_year, vehicle_colour, capacity }
@@ -483,7 +512,7 @@ export const updateVehicleDetails = async (req: AuthRequest, res: Response) => {
     vehicle_colour: string;
     capacity:       number;
   };
- 
+
   try {
     await query(
       `UPDATE driver_profiles
@@ -502,7 +531,7 @@ export const updateVehicleDetails = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // PATCH /api/driver/profile/amenities
 // Body: { amenities: string[] }
@@ -510,11 +539,11 @@ export const updateVehicleDetails = async (req: AuthRequest, res: Response) => {
 export const updateAmenities = async (req: AuthRequest, res: Response) => {
   const userId = (req as any).user!.id;
   const { amenities } = req.body as { amenities: string[] };
- 
+
   if (!Array.isArray(amenities)) {
     return res.status(400).json({ message: 'amenities must be an array' });
   }
- 
+
   try {
     await query(
       `UPDATE driver_profiles
@@ -529,7 +558,7 @@ export const updateAmenities = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // POST /api/driver/profile/images
 // Body: { image_url, caption?, order_index? }
@@ -537,21 +566,21 @@ export const updateAmenities = async (req: AuthRequest, res: Response) => {
 export const addMatatuImage = async (req: AuthRequest, res: Response) => {
   const userId = (req as any).user!.id;
   const { image_url, caption, order_index } = req.body as {
-    image_url:   string;
-    caption?:    string;
+    image_url:    string;
+    caption?:     string;
     order_index?: number;
   };
- 
+
   if (!image_url) {
     return res.status(400).json({ message: 'image_url is required' });
   }
- 
+
   try {
     const profileId = await getDriverProfileId(userId);
     if (!profileId) {
       return res.status(404).json({ message: 'Driver profile not found' });
     }
- 
+
     // Enforce max 5 images
     const countRes = await query(
       'SELECT COUNT(*) FROM matatu_images WHERE driver_profile_id = $1',
@@ -560,7 +589,7 @@ export const addMatatuImage = async (req: AuthRequest, res: Response) => {
     if (parseInt(countRes.rows[0].count, 10) >= 5) {
       return res.status(400).json({ message: 'Maximum 5 images allowed' });
     }
- 
+
     const r = await query(
       `INSERT INTO matatu_images (driver_profile_id, image_url, caption, order_index)
        VALUES ($1, $2, $3, $4)
@@ -573,20 +602,20 @@ export const addMatatuImage = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // DELETE /api/driver/profile/images/:id
 // ══════════════════════════════════════════════════════════════════════════
 export const deleteMatatuImage = async (req: AuthRequest, res: Response) => {
   const userId  = (req as any).user!.id;
   const imageId = parseInt(req.params.id as string, 10);
- 
+
   try {
     const profileId = await getDriverProfileId(userId);
     if (!profileId) {
       return res.status(404).json({ message: 'Driver profile not found' });
     }
- 
+
     const r = await query(
       `DELETE FROM matatu_images
        WHERE id = $1 AND driver_profile_id = $2
@@ -602,7 +631,7 @@ export const deleteMatatuImage = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // PATCH /api/driver/profile/images/:id
 // Body: { caption?, order_index? }
@@ -614,13 +643,13 @@ export const updateMatatuImage = async (req: AuthRequest, res: Response) => {
     caption?:     string;
     order_index?: number;
   };
- 
+
   try {
     const profileId = await getDriverProfileId(userId);
     if (!profileId) {
       return res.status(404).json({ message: 'Driver profile not found' });
     }
- 
+
     await query(
       `UPDATE matatu_images
        SET caption     = COALESCE($1, caption),
@@ -634,14 +663,14 @@ export const updateMatatuImage = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // GET /api/driver/ratings
 // Returns full ratings list + category averages for DriverRatingsPage
 // ══════════════════════════════════════════════════════════════════════════
 export const getDriverRatings = async (req: AuthRequest, res: Response) => {
   const userId = (req as any).user!.id;
- 
+
   try {
     // All ratings for this driver
     const ratingsRes = await query(
@@ -660,10 +689,10 @@ export const getDriverRatings = async (req: AuthRequest, res: Response) => {
        ORDER BY rat.created_at DESC`,
       [userId],
     );
- 
+
     const rows = ratingsRes.rows;
     const count = rows.length;
- 
+
     const avg = (field: keyof typeof rows[0]) =>
       count > 0
         ? parseFloat(
@@ -672,13 +701,13 @@ export const getDriverRatings = async (req: AuthRequest, res: Response) => {
             ).toFixed(2),
           )
         : 0;
- 
+
     // Total trips from driver_profiles
     const tripsRes = await query(
       'SELECT total_trips FROM driver_profiles WHERE user_id = $1',
       [userId],
     );
- 
+
     return res.json({
       average_punctuality: avg('punctuality_score'),
       average_comfort:     avg('comfort_score'),
@@ -693,14 +722,14 @@ export const getDriverRatings = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ══════════════════════════════════════════════════════════════════════════
 // GET /api/driver/trips
 // Returns trip history + stats for DriverTripsPage
 // ══════════════════════════════════════════════════════════════════════════
 export const getDriverTrips = async (req: AuthRequest, res: Response) => {
   const userId = (req as any).user!.id;
- 
+
   try {
     const tripsRes = await query(
       `SELECT
@@ -724,16 +753,16 @@ export const getDriverTrips = async (req: AuthRequest, res: Response) => {
        ORDER BY t.date DESC, t.time DESC`,
       [userId],
     );
- 
+
     const trips = tripsRes.rows;
- 
+
     // ── Compute stats ─────────────────────────────────────────────────────
     const total_trips      = trips.length;
     const total_passengers = trips.reduce((s, t) => s + (t.passenger_count ?? 0), 0);
     const total_fare_collected = trips
       .filter((t) => t.payment_status === 'paid')
       .reduce((s, t) => s + (t.fare ?? 0), 0);
- 
+
     // Average duration — parse "23 mins" / "1h 10m" / "45m" patterns
     const durations = trips
       .map((t) => parseDurationToMinutes(t.duration))
@@ -742,7 +771,7 @@ export const getDriverTrips = async (req: AuthRequest, res: Response) => {
       durations.length > 0
         ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
         : null;
- 
+
     // Busiest day of week
     const dayCounts: Record<string, number> = {};
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -756,7 +785,7 @@ export const getDriverTrips = async (req: AuthRequest, res: Response) => {
       Object.keys(dayCounts).length > 0
         ? Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0][0]
         : null;
- 
+
     return res.json({
       trips,
       stats: {
@@ -772,7 +801,7 @@ export const getDriverTrips = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
- 
+
 // ── Duration parser helper ─────────────────────────────────────────────────
 // Handles strings like: "23 mins", "45m", "1h 10m", "1 hr 5 mins"
 function parseDurationToMinutes(raw: string | null): number | null {
