@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User } from '@/types';
-import { authFetch } from '@/lib/authFetch';   // ← Import here
+import { authFetch } from '@/lib/authFetch';
 
 interface AuthContextType {
   user: User | null;
@@ -15,20 +15,31 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user,    setUser]    = useState<User | null>(null);
+  const [token,   setToken]   = useState<string | null>(null);
+  const [loading, setLoading] = useState(true); // ← must start TRUE
 
-  // Initialize from storage
   useEffect(() => {
     const savedToken = localStorage.getItem('twende_token');
-    const savedUser = localStorage.getItem('twende_user');
-    
+    const savedUser  = localStorage.getItem('twende_user');
+
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      try {
+        // Both setters + setLoading(false) are batched by React 18 —
+        // only ONE re-render fires, so RoleRoute never sees a half-ready state.
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+      } catch {
+        // Corrupted JSON in storage (can happen after Android force-close).
+        // Clear it so the user gets a clean login instead of an infinite splash.
+        console.warn('Twende: corrupted auth storage — clearing.');
+        localStorage.removeItem('twende_token');
+        localStorage.removeItem('twende_user');
+        localStorage.removeItem('twende_avatar');
+      }
     }
-    setLoading(false);
+
+    setLoading(false); // Always runs — auth check is complete either way.
   }, []);
 
   const login = (newToken: string, newUser: User) => {
@@ -44,15 +55,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('twende_token');
     localStorage.removeItem('twende_user');
     localStorage.removeItem('twende_avatar');
-    window.location.href = '/login';   // Force redirect on logout
+    window.location.href = '/login';
   }, []);
 
   const refreshUser = useCallback(async () => {
     if (!token) return;
-
     try {
-      const res = await authFetch('/auth/me');   // Use authFetch here too
-
+      const res = await authFetch('/auth/me');
       if (res.ok) {
         const updatedUser: User = await res.json();
         setUser(updatedUser);
@@ -60,9 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (res.status === 401) {
         logout();
       }
-    } catch (error) {
-      console.error('Failed to refresh user session:', error);
-      // If it's a token error, authFetch already handled logout
+    } catch (err) {
+      console.error('Failed to refresh user session:', err);
     }
   }, [token, logout]);
 
@@ -74,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 };
